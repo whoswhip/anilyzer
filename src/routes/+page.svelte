@@ -5,6 +5,7 @@
 	import type { MangabakaSeries } from '$lib/types/series';
 	import { ObjectTypes, StatusNames } from '$lib/types/gdpr/enums';
 	import StatCard from '$lib/components/StatCard.svelte';
+	import { browser } from '$app/environment';
 
 	interface StatItem {
 		title: string;
@@ -17,12 +18,13 @@
 	let activities: Activity[] = [];
 	let lists: List[] = [];
 	let series: MangabakaSeries[] = [];
-	let includeRepeats: boolean =
-		typeof window !== 'undefined'
-			? window.localStorage.getItem('includeRepeats') === 'true'
-			: false;
-	$: if (typeof window !== 'undefined')
-		window.localStorage.setItem('includeRepeats', includeRepeats.toString());
+	let includeRepeats = browser && localStorage.getItem('includeRepeats') !== 'false';
+	let fullClock = browser && localStorage.getItem('fullClock') !== 'false';
+
+	$: if (browser) {
+		localStorage.setItem('includeRepeats', String(includeRepeats));
+		localStorage.setItem('fullClock', String(fullClock));
+	}
 	let settingsOpen: boolean = false;
 
 	let totalChaptersRead: number = 0;
@@ -105,8 +107,14 @@
 		if (!Array.isArray(dayEntries) || dayEntries.length === 0) return { date: '', chapters: 0, unit: 'chapters' };
 		let top = { date: '', chapters: 0, unit: 'chapters' };
 		for (const d of dayEntries) {
-			const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
-			const animeTotal = Object.values(d.anime || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+			const mangaTotal = (Object.values(d.manga || {}) as Array<number | string>).reduce<number>(
+				(s, v) => s + (Number(v) || 0),
+				0
+			);
+			const animeTotal = (Object.values(d.anime || {}) as Array<number | string>).reduce<number>(
+				(s, v) => s + (Number(v) || 0),
+				0
+			);
 			const amount = Math.max(mangaTotal, animeTotal);
 			if (amount <= 0) continue;
 			const unit = mangaTotal >= animeTotal ? 'chapters' : 'episodes';
@@ -533,18 +541,21 @@
 		</div>
 	{/if}
 
-	{#if activitiesByHour.length > 0}
+	{#if activitiesByHour.some(hourData => hourData.count > 0)}
 		<div class="mt-10">
 			<h2 class="text-2xl font-semibold mb-4 text-blue-100">Activity by Hour</h2>
 			<div class="flex gap-1 flex-wrap">
 				{#each activitiesByHour as hourData (hourData.hour)}
 					{@const maxCount = Math.max(...activitiesByHour.map(h => h.count)) || 1}
 					{@const intensity = hourData.count / maxCount}
+					{@const lightness = Math.min(70, 100 - intensity * 90)}
 					<div
 						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 group relative"
-						style="background-color: hsl(200, 70%, {100 - intensity * 60}%)"
+						style="background-color: hsl(200, 80%, {lightness}%)"
 					>
-						{hourData.hour}
+						{fullClock
+							? hourData.hour.toString().padStart(2, '0') + ':00'
+							: ((hourData.hour % 12) || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
 						<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
 							{hourData.count} activit{hourData.count === 1 ? 'y' : 'ies'}
 						</div>
@@ -609,6 +620,17 @@
 					/>
 					<label for="includeRepeatsSettings" class="text-slate-400"
 						>Include repeats in calculations</label
+					>
+				</div>
+				<div class="flex items-center">
+					<input
+						type="checkbox"
+						id="fullClockSettings"
+						bind:checked={fullClock}
+						class="mr-2"
+					/>
+					<label for="fullClockSettings" class="text-slate-400"
+						>Display time in 24-hour format</label
 					>
 				</div>
 			</div>
