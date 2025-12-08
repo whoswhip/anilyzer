@@ -47,7 +47,7 @@
             </div>
         {/if}
     </div>
-    <p class="text-4xl font-bold mt-2.5 text-blue-50">{value}</p>
+    <p class="text-4xl font-bold mt-2.5 text-blue-50">{typeof value === 'number' ? value.toLocaleString() : value}</p>
     {#if subtitle}
         <p class="font-medium text-slate-500 uppercase mt-2">{subtitle}</p>
     {/if}
