@@ -1,38 +1,39 @@
-# sv
+# Anilyzer
+Anilyzer takes [GDPR data exports](https://anilist.co/settings/account) from [AniList](https://anilist.co/) and analyzes your data to give you insights such as:
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+- Chapters read
+- Estimated reading time/speed
+- Reading/watching streaks (current & longest)
+- And more!
 
-## Creating a project
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Self-hosting
+### Requirements
+- [Node.js](https://nodejs.org) (v18_ recommended)
+- [Mangabaka.org database dump](https://api.mangabaka.dev/v1/database/series.sqlite.zst)
 
-```sh
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
+### Setup
+1. Clone the repository and install dependencies:
 ```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+git clone https://github.com/whoswhip/anilyzer.git
+cd anilyzer
+npm install
 ```
-
-## Building
-
-To create a production version of your app:
-
-```sh
+### Configuration:
+Create an `.env` file with the following
+```
+DATABASE_URL=/path/to/series.sqlite
+```
+This should point to your extracted Mangabak `.sqlite` file
+### Build Anilyzer:
+```
 npm run build
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### Preview production build locally: 
+```
+npm run preview
+```
+For development with hot reload, use:
+```
+npm run dev
+```
