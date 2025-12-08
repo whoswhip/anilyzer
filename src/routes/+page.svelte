@@ -468,15 +468,15 @@
 		if (!seriesData) return '';
 		switch (quaity) {
 			case 'small':
-				return seriesData.coverX150X1;
+				return seriesData.coverX150X1 + '.avif';
 			case 'medium':
-				return seriesData.coverX250X1;
+				return seriesData.coverX250X1 + '.avif';
 			case 'large':
-				return seriesData.coverX350X1;
+				return seriesData.coverX350X1 + '.avif';
 			case 'raw':
 				return seriesData.coverRawUrl;
 			default:
-				return seriesData.coverX250X1;
+				return seriesData.coverX250X1 + '.avif';
 		}
 	}
 </script>
@@ -569,8 +569,8 @@
 		<div>
 			<h2 class="text-2xl font-semibold mt-10 mb-4 text-blue-100">Most Read Series</h2>
 
-			{#each mostReadSeries as series (series.series_id)}
-				<div class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg">
+			{#each mostReadSeries.slice(0,10) as series (series.series_id)}
+				<div class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg border border-slate-775">
 					<img
 						src={getCoverURL(series.series_id, 'medium')}
 						alt={series.data
@@ -579,11 +579,11 @@
 						class="w-32 h-48 object-cover rounded"
 					/>
 					<div>
-						<h3 class="text-lg font-semibold text-blue-100">
+						<a class="text-lg font-semibold text-blue-100 hover:text-blue-400" href={`https://anilist.co/manga/${series.series_id}`} target="_blank" rel="noopener noreferrer">
 							{series.data
 								? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
 								: 'Unknown Title'}
-						</h3>
+						</a>
 						<p class="text-slate-400">Chapters Read: {series.progress}</p>
 						<p class="text-slate-400">Status: {StatusNames[series.status]}</p>
 						<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>

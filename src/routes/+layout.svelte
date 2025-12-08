@@ -8,6 +8,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<title>Anilyzer</title>
 </svelte:head>
 
 {@render children()}
