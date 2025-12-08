@@ -29,8 +29,9 @@
 	let totalEpisodesWatched: number = 0;
 	let watchTimeMinutes: number = 0;
 	let readingStats = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
-	let history: Record<number, Activity> = {};
-	let mostActiveDay = { date: '', chapters: 0 };
+	let history: Record<number, Activity[]> = {};
+	let dayEntries: Array<any> = [];
+	let mostActiveDay = { date: '', chapters: 0, unit: 'chapters' };
 	let streaks: any = {
 		longestStreak: { manga: 0, anime: 0 },
 		currentStreak: { manga: 0, anime: 0 }
@@ -98,16 +99,31 @@
 
 	$: history = buildHistory(activities);
 
-	$: mostActiveDay = Object.values(history).reduce(
-		(max, activity) => {
-			const progress = parseActivityProgress(activity);
-			if (progress > max.chapters) {
-				return { date: activity.created_at, chapters: progress };
+	$: dayEntries = buildDayEntries(activities);
+
+	$: mostActiveDay = (function () {
+		if (!Array.isArray(dayEntries) || dayEntries.length === 0) return { date: '', chapters: 0, unit: 'chapters' };
+		let top = { date: '', chapters: 0, unit: 'chapters' };
+		for (const d of dayEntries) {
+			const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+			const animeTotal = Object.values(d.anime || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+			const amount = Math.max(mangaTotal, animeTotal);
+			if (amount <= 0) continue;
+			const unit = mangaTotal >= animeTotal ? 'chapters' : 'episodes';
+			if (amount > top.chapters) {
+				top = { date: new Date(d.date).toISOString(), chapters: amount, unit };
 			}
-			return max;
-		},
-		{ date: '', chapters: 0 }
-	);
+		}
+		return top;
+	})();
+	
+	$: activitiesByHour = Array.from({ length: 24 }, (_, hour) => {
+		const activitiesByHour = activities.filter(
+			(activity) => new Date(activity.created_at).getUTCHours() === hour
+		);
+		return { hour, activities: activitiesByHour, count: activitiesByHour.length };
+	});
+
 
 	$: streaks = calculateStreaks(history);
 
@@ -172,11 +188,29 @@
 		},
 		{
 			title: 'Most Active Reading Day',
-			subtitle: `On ${mostActiveDay.date.split('T')[0]}`,
-			value: `${mostActiveDay.chapters} chapters`,
-			tooltip: `On ${new Date(mostActiveDay.date).toLocaleDateString()}, you read ${mostActiveDay.chapters} chapters.`
+			subtitle: mostActiveDay.date ? `On ${mostActiveDay.date.split('T')[0]}` : 'On —',
+			value: `${mostActiveDay.chapters} ${mostActiveDay.unit}`,
+			tooltip: mostActiveDay.date
+				? `On ${new Date(mostActiveDay.date).toLocaleDateString()}, you read ${mostActiveDay.chapters} ${mostActiveDay.unit}.`
+				: 'No activity data.'
 		}
 	];
+	
+	$: mostReadSeries = lists
+		.filter((list) => list.series_type === ObjectTypes.Manga)
+		.map((list) => {
+			const seriesData = series.find((s) => Number(s.sourceAnilistId) === list.series_id);
+			return {
+				...list,
+				progress: includeRepeats ? list.progress + list.repeat * list.progress : list.progress,
+				data: seriesData
+			};
+		})
+		.sort((a, b) => {
+			const aProgress = includeRepeats ? a.progress + a.repeat * a.progress : a.progress;
+			const bProgress = includeRepeats ? b.progress + b.repeat * b.progress : b.progress;
+			return bProgress - aProgress;
+		});
 
 	function calculateReadingTime(readingActivities: Activity[]) {
 		const emptyTotals = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
@@ -257,18 +291,91 @@
 		return 0;
 	}
 
+	function getProgressDeltaForActivity(activity: Activity, tracker: Map<string, number>) {
+		if (!activity) return 0;
+		const type = activity.object_type;
+		if (type !== ObjectTypes.Anime + 1 && type !== ObjectTypes.Manga + 1) return 0;
+		const value = activity.object_value;
+		if (typeof value !== 'string' || !value.trim()) return 0;
+
+		const key = `${type}:${activity.object_id}`;
+
+		if (value.includes('-')) {
+			const parts = value.split('-').map((p) => parseInt(p.trim(), 10));
+			if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+				const delta = parts[1] - parts[0] + 1;
+				tracker.set(key, parts[1]);
+				return delta > 0 ? delta : 0;
+			}
+			return 0;
+		}
+
+		const current = parseInt(value, 10);
+		if (!Number.isFinite(current)) return 0;
+
+		const previous = tracker.get(key);
+		tracker.set(key, current);
+
+		if (previous === undefined) {
+			return 0;
+		}
+
+		const delta = current - previous;
+		return delta > 0 ? delta : 0;
+	}
+
+	function toDayStartUTC(timestamp: number) {
+		if (timestamp === null || timestamp === undefined) return NaN;
+		const date = new Date(Number(timestamp));
+		if (Number.isNaN(date.getTime())) return NaN;
+		return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+	}
+
+	function buildDayEntries(activities: Activity[]) {
+		if (!Array.isArray(activities)) return [];
+		const sorted = [...activities].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+		const tracker = new Map<string, number>();
+		const dayMap: Record<number, { date: number; total: number; anime: Record<string, number>; manga: Record<string, number> }> = {};
+
+		for (const activity of sorted) {
+			const ts = Date.parse(activity.created_at);
+			if (Number.isNaN(ts)) continue;
+			const delta = getProgressDeltaForActivity(activity, tracker);
+			if (!delta || delta <= 0) continue;
+
+			const dayKey = toDayStartUTC(ts);
+			if (!Number.isFinite(dayKey)) continue;
+
+			if (!dayMap[dayKey]) {
+				dayMap[dayKey] = { date: dayKey, total: 0, anime: {}, manga: {} };
+			}
+			const entry = dayMap[dayKey];
+			entry.total += delta;
+			const seriesKey = String(activity.object_id);
+			if (activity.object_type === ObjectTypes.Anime + 1) {
+				entry.anime[seriesKey] = (entry.anime[seriesKey] || 0) + delta;
+			} else if (activity.object_type === ObjectTypes.Manga + 1) {
+				entry.manga[seriesKey] = (entry.manga[seriesKey] || 0) + delta;
+			}
+		}
+
+		return Object.values(dayMap)
+			.filter((d) => d.total > 0 || Object.keys(d.anime).length > 0 || Object.keys(d.manga).length > 0)
+			.sort((a, b) => a.date - b.date);
+	}
+
 	function buildHistory(activities: Activity[]) {
-		const history: Record<number, Activity> = {};
+		const history: Record<number, Activity[]> = {};
 		for (const activity of activities) {
 			const date = new Date(activity.created_at);
-			date.setHours(0, 0, 0, 0);
-			const dateKey = date.getTime();
-			history[dateKey] = activity;
+			const dateKey = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+			if (!history[dateKey]) history[dateKey] = [];
+			history[dateKey].push(activity);
 		}
 		return history;
 	}
 
-	function calculateStreaks(history: Record<number, Activity>) {
+	function calculateStreaks(history: Record<number, Activity[]>) {
 		let longestStreak = { manga: 0, anime: 0, any: 0 };
 		let currentStreak = { manga: 0, anime: 0, any: 0 };
 		let tempStreak = { manga: 0, anime: 0, any: 0 };
@@ -276,9 +383,10 @@
 			.map((key) => parseInt(key, 10))
 			.sort((a, b) => a - b);
 
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-		const todayTime = today.getTime();
+		if (dates.length === 0) return { longestStreak, currentStreak };
+
+		const now = new Date();
+		const todayTime = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 
 		for (let i = 1; i < dates.length; i++) {
 			const prevDate = new Date(dates[i - 1]);
@@ -286,26 +394,33 @@
 			const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
 
 			if (diffDays === 1) {
-				const activity = history[dates[i]];
-				const objectType = activity.object_type;
-				if (objectType === ObjectTypes.Manga + 1) {
-					tempStreak.manga += 1;
-				} else if (objectType === ObjectTypes.Anime + 1) {
-					tempStreak.anime += 1;
-				}
+				const dayActivities = history[dates[i]];
+				const hasManga = dayActivities.some((a) => a.object_type === ObjectTypes.Manga + 1);
+				const hasAnime = dayActivities.some((a) => a.object_type === ObjectTypes.Anime + 1);
+				if (hasManga) tempStreak.manga += 1; else tempStreak.manga = 0;
+				if (hasAnime) tempStreak.anime += 1; else tempStreak.anime = 0;
+				if (hasManga || hasAnime) tempStreak.any += 1; else tempStreak.any = 0;
 			} else {
 				tempStreak = { manga: 0, anime: 0, any: 0 };
 			}
 
 			longestStreak.manga = Math.max(longestStreak.manga, tempStreak.manga);
 			longestStreak.anime = Math.max(longestStreak.anime, tempStreak.anime);
+			longestStreak.any = Math.max(longestStreak.any, tempStreak.any);
 		}
 
 		const lastDate = new Date(dates[dates.length - 1]);
 		const diffFromToday = (todayTime - lastDate.getTime()) / (1000 * 60 * 60 * 24);
 
 		if (diffFromToday <= 1) {
-			currentStreak = { ...tempStreak };
+			if (dates.length === 1) {
+				const lastDayActs = history[dates[0]];
+				currentStreak.manga = lastDayActs.some((a) => a.object_type === ObjectTypes.Manga + 1) ? 1 : 0;
+				currentStreak.anime = lastDayActs.some((a) => a.object_type === ObjectTypes.Anime + 1) ? 1 : 0;
+				currentStreak.any = currentStreak.manga || currentStreak.anime ? 1 : 0;
+			} else {
+				currentStreak = { ...tempStreak };
+			}
 		}
 
 		return { longestStreak, currentStreak };
@@ -339,22 +454,6 @@
 			}, chunkIndex * delay);
 		}
 	}
-
-	$: mostReadSeries = lists
-		.filter((list) => list.series_type === ObjectTypes.Manga)
-		.map((list) => {
-			const seriesData = series.find((s) => Number(s.sourceAnilistId) === list.series_id);
-			return {
-				...list,
-				progress: includeRepeats ? list.progress + list.repeat * list.progress : list.progress,
-				data: seriesData
-			};
-		})
-		.sort((a, b) => {
-			const aProgress = includeRepeats ? a.progress + a.repeat * a.progress : a.progress;
-			const bProgress = includeRepeats ? b.progress + b.repeat * b.progress : b.progress;
-			return bProgress - aProgress;
-		});
 
 	function getCoverURL(seriesId: number, quaity: 'small' | 'medium' | 'large' | 'raw' = 'medium') {
 		const seriesData = series.find((s) => Number(s.sourceAnilistId) === seriesId);
@@ -433,9 +532,31 @@
 			{/each}
 		</div>
 	{/if}
+
+	{#if activitiesByHour.length > 0}
+		<div class="mt-10">
+			<h2 class="text-2xl font-semibold mb-4 text-blue-100">Activity by Hour</h2>
+			<div class="flex gap-1 flex-wrap">
+				{#each activitiesByHour as hourData (hourData.hour)}
+					{@const maxCount = Math.max(...activitiesByHour.map(h => h.count)) || 1}
+					{@const intensity = hourData.count / maxCount}
+					<div
+						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 group relative"
+						style="background-color: hsl(200, 70%, {100 - intensity * 60}%)"
+					>
+						{hourData.hour}
+						<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+							{hourData.count} activit{hourData.count === 1 ? 'y' : 'ies'}
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
 	{#if mostReadSeries.length > 0}
 		<div>
-			<h2 class="text-2xl font-semibold mt-10 mb-4 text-blue-100">Most Read Manga Series</h2>
+			<h2 class="text-2xl font-semibold mt-10 mb-4 text-blue-100">Most Read Series</h2>
 
 			{#each mostReadSeries as series (series.series_id)}
 				<div class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg">
