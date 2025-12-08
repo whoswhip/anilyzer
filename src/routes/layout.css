@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+@theme {
+    --color-slate-925: rgb(11,22,34);
+    --color-slate-775: #253049;
+    --color-slate-825: #1a2332;
+    --color-slate-850: #151f2e;
+    --color-slate-875: #111b29;
+}
+
+* {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
