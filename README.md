@@ -100,5 +100,5 @@ If you want to make Anilyzer **publically accessible**, follow these steps:
    ```
 4. Start the server:
    ```bash
-   node build
+   node build/index.js
    ```
