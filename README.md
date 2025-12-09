@@ -32,7 +32,7 @@ Create an `.env` file with the following
 DATABASE_URL=/path/to/series.sqlite
 ```
 
-This should point to your extracted Mangabak `.sqlite` file
+This should point to your extracted Mangabaka `.sqlite` file
 
 ### Build Anilyzer:
 
