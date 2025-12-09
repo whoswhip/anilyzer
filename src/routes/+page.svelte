@@ -680,7 +680,7 @@
 		</div>
 	</div>
 	<button
-		class="p-2 fixed bottom-6 right-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-100 rounded-full shadow-lg transition-colors duration-300"
+		class="p-2 fixed bottom-6 right-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-100 rounded-full shadow-lg transition-colors duration-300 cursor-pointer"
 		on:click={() => (settingsOpen = true)}
 		aria-label="Open Settings"
 	>
