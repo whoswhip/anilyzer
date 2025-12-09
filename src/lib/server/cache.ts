@@ -20,7 +20,7 @@ class Cache<T> {
 
 	get(key: string): T | null {
 		const entry = this.store.get(key);
-		
+
 		if (!entry) {
 			return null;
 		}

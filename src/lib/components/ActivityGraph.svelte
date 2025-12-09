@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { MangabakaSeries } from '$lib/types/series';
-    import { colors } from '$lib/constants';
-    import { getColor } from '$lib/utils';
+	import { colors } from '$lib/constants';
+	import { getColor } from '$lib/utils';
 
 	type ActivityEntry = {
 		date: number | string;
@@ -12,7 +12,7 @@
 
 	type TooltipState = {
 		text: string;
-        element?: HTMLDivElement;
+		element?: HTMLDivElement;
 		x: number;
 		y: number;
 		visible: boolean;
@@ -56,12 +56,7 @@
 
 			const animeTitles = Object.keys(entry.anime || {}).map((id) => {
 				const list = listData.find((l) => String(l.series_id) === id);
-				return (
-					list?.data?.title ||
-					list?.data?.romanizedTitle ||
-					list?.data?.nativeTitle ||
-					id
-				);
+				return list?.data?.title || list?.data?.romanizedTitle || list?.data?.nativeTitle || id;
 			});
 			const mangaSeries = Object.keys(entry.manga || {}).map((id) => {
 				const list = listData.find((l) => String(l.series_id) === id);
@@ -71,7 +66,7 @@
 						list?.data?.title ||
 						list?.data?.romanizedTitle ||
 						list?.data?.nativeTitle ||
-						`Series ${id}`,
+						`Series ${id}`
 				} as MangabakaSeries;
 			});
 
@@ -117,17 +112,21 @@
 	};
 	let tooltipElement: HTMLDivElement | null = null;
 
-	const showTooltip = (day: { timestamp: number; total: number }, event: MouseEvent, element: HTMLDivElement) => {
+	const showTooltip = (
+		day: { timestamp: number; total: number },
+		event: MouseEvent,
+		element: HTMLDivElement
+	) => {
 		if (tooltip.frozen) return;
 
 		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
-        element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
+		element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
 		tooltip = {
 			text: `${date} · ${day.total} activity`,
-            element: element,
+			element: element,
 			x: event.clientX,
 			y: event.clientY,
 			visible: true,
@@ -164,7 +163,7 @@
 		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
-		
+
 		tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
@@ -181,12 +180,12 @@
 
 	const hideTooltip = () => {
 		if (tooltip.frozen) return;
-        tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
+		tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		tooltip = { text: '', x: 0, y: 0, visible: false, frozen: false, content: null };
 	};
 
 	const unfreezeTooltip = () => {
-        tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
+		tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		tooltip = { ...tooltip, frozen: false };
 	};
 
@@ -229,7 +228,8 @@
 							<div
 								class="w-4 h-4 rounded transition-transform hover:scale-150 cursor-pointer hover:outline-1 outline-blue-500"
 								style={`background:${getColor(day.total, maxValue)}`}
-								on:mouseenter={(event) => showTooltip(day, event, event.currentTarget as HTMLDivElement)}
+								on:mouseenter={(event) =>
+									showTooltip(day, event, event.currentTarget as HTMLDivElement)}
 								on:mousemove={(event) => moveMouse(event)}
 								on:mouseleave={hideTooltip}
 								on:click={(event) => freezeTooltip(day, event.currentTarget as HTMLDivElement)}

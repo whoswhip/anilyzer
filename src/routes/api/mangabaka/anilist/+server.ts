@@ -39,9 +39,7 @@ export async function POST({ request }: RequestEvent) {
 		return error(400, 'Maximum 50 IDs per request');
 	}
 
-	const validIds = anilistIds.every(
-		(id) => typeof id === 'number'
-	);
+	const validIds = anilistIds.every((id) => typeof id === 'number');
 	if (!validIds) {
 		return error(400, 'All anilistIds must be numbers');
 	}
@@ -49,7 +47,7 @@ export async function POST({ request }: RequestEvent) {
 	const stringIds = anilistIds.map((id) => String(id));
 
 	try {
-		const cachedResults: typeof series.$inferSelect[] = [];
+		const cachedResults: (typeof series.$inferSelect)[] = [];
 		const uncachedIds: string[] = [];
 
 		for (const id of stringIds) {
@@ -61,7 +59,7 @@ export async function POST({ request }: RequestEvent) {
 			}
 		}
 
-		let dbResults: typeof series.$inferSelect[] = [];
+		let dbResults: (typeof series.$inferSelect)[] = [];
 		if (uncachedIds.length > 0) {
 			dbResults = await db
 				.select()
@@ -85,7 +83,7 @@ export async function POST({ request }: RequestEvent) {
 		console.error('Database query error:', err);
 		return error(500, 'Internal server error');
 	}
-};
+}
 
 export async function GET({ url }: RequestEvent) {
 	if (!rateLimiter.tryConsume()) {
@@ -117,7 +115,7 @@ export async function GET({ url }: RequestEvent) {
 	}
 
 	try {
-		const cachedResults: typeof series.$inferSelect[] = [];
+		const cachedResults: (typeof series.$inferSelect)[] = [];
 		const uncachedIds: string[] = [];
 
 		for (const id of anilistIds) {
@@ -129,7 +127,7 @@ export async function GET({ url }: RequestEvent) {
 			}
 		}
 
-		let dbResults: typeof series.$inferSelect[] = [];
+		let dbResults: (typeof series.$inferSelect)[] = [];
 		if (uncachedIds.length > 0) {
 			dbResults = await db
 				.select()
@@ -153,4 +151,4 @@ export async function GET({ url }: RequestEvent) {
 		console.error('Database query error:', err);
 		return error(500, 'Internal server error');
 	}
-};
+}

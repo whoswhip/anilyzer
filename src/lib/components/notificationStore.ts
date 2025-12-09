@@ -15,11 +15,7 @@ let nextId = 0;
 
 export const notifications = notificationQueue;
 
-export function notify(options: {
-	message: string;
-	type?: NotificationType;
-	duration?: number;
-}) {
+export function notify(options: { message: string; type?: NotificationType; duration?: number }) {
 	const id = ++nextId;
 	notificationQueue.update((items) => [
 		...items,

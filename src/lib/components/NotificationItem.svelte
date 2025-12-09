@@ -68,7 +68,7 @@
 	out:fly={{ x: 200, duration: 240, easing: cubicIn }}
 	on:mouseenter={pauseTimer}
 	on:mouseleave={resumeTimer}
-    on:click={dismiss}
+	on:click={dismiss}
 >
 	<div class="flex min-w-0 flex-1 items-center gap-3">
 		<div class="flex flex-col gap-1 truncate">
