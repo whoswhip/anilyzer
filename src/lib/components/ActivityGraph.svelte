@@ -2,6 +2,7 @@
 	import type { MangabakaSeries } from '$lib/types/series';
 	import { colors } from '$lib/constants';
 	import { getColor } from '$lib/utils';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	type ActivityEntry = {
 		date: number | string;
@@ -39,13 +40,13 @@
 		return total;
 	};
 
-	let entryTotals = new Map<string, number>();
-	let entryDetails = new Map<string, { manga: MangabakaSeries[]; anime: string[] }>();
+	let entryTotals = new SvelteMap<string, number>();
+	let entryDetails = new SvelteMap<string, { manga: MangabakaSeries[]; anime: string[] }>();
 	let normalizedEntries: ActivityEntry[] = [];
 
 	$: {
-		entryTotals = new Map();
-		entryDetails = new Map();
+		entryTotals = new SvelteMap<string, number>();
+		entryDetails = new SvelteMap<string, { manga: MangabakaSeries[]; anime: string[] }>();
 		normalizedEntries = Array.isArray(entries) ? entries : [];
 		for (const entry of normalizedEntries) {
 			const rawDate = typeof entry.date === 'string' ? Date.parse(entry.date) : Number(entry.date);
@@ -76,31 +77,26 @@
 		}
 	}
 
-	$: today = new Date();
-	$: endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-	$: endDay = new Date(endDate).getUTCDay();
-	$: defaultStart = endDate - (52 * 7 + endDay) * dayMs;
-	$: startDate = defaultStart;
+	const today = new Date();
+	const endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+	const endDay = new Date(endDate).getUTCDay();
+	const defaultStart = endDate - (52 * 7 + endDay) * dayMs;
+	const startDate = defaultStart;
 
-	$: calendarDays = [] as Array<{ timestamp: number; total: number }>;
-	$: {
-		for (let current = startDate; current <= endDate; current += dayMs) {
-			const key = toKey(current);
-			const total = entryTotals.get(key) ?? 0;
-			calendarDays.push({ timestamp: current, total });
-		}
+	const calendarDays: Array<{ timestamp: number; total: number }> = [];
+	for (let current = startDate; current <= endDate; current += dayMs) {
+		const key = toKey(current);
+		const total = entryTotals.get(key) ?? 0;
+		calendarDays.push({ timestamp: current, total });
 	}
 
-	$: weeks = [] as Array<Array<{ timestamp: number; total: number }>>;
-	$: {
-		for (let i = 0; i < calendarDays.length; i += 7) {
-			weeks.push(calendarDays.slice(i, i + 7));
-		}
+	const weeks: Array<Array<{ timestamp: number; total: number }>> = [];
+	for (let i = 0; i < calendarDays.length; i += 7) {
+		weeks.push(calendarDays.slice(i, i + 7));
 	}
 
-	$: maxValue = Math.max(0, ...Array.from(entryTotals.values()));
-	$: minValue = Math.min(...Array.from(entryTotals.values()).filter((v) => v > 0), maxValue || 1);
-	$: hasActivity = maxValue > 0;
+	const maxValue = Math.max(0, ...Array.from(entryTotals.values()));
+	const hasActivity = maxValue > 0;
 
 	let tooltip: TooltipState = {
 		text: '',
@@ -200,7 +196,7 @@
 		</div>
 		<div class="flex items-center gap-2 text-xs text-slate-400">
 			<span>Less</span>
-			{#each colors as color}
+			{#each colors as color (color)}
 				<div class="w-4 h-4 rounded" style={`background:${color}`}></div>
 			{/each}
 			<span>More</span>
@@ -219,7 +215,7 @@
 				<span class="h-4">Sat</span>
 			</div>
 			<div class="flex gap-1">
-				{#each weeks as week, index}
+				{#each weeks as week, index (index)}
 					<div class="grid grid-rows-7 gap-1" aria-label={`Week ${index + 1}`}>
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -261,7 +257,7 @@
 						<div class="mb-2">
 							<p class="text-xs font-semibold text-blue-300 mb-1">Manga</p>
 							<ul class="text-xs text-slate-300 space-y-1">
-								{#each tooltip.content.manga as manga}
+								{#each tooltip.content.manga as manga (manga.sourceAnilistId)}
 									<a
 										class="hover:text-blue-400"
 										href="https://anilist.co/manga/{manga.sourceAnilistId}"
@@ -276,7 +272,7 @@
 						<div>
 							<p class="text-xs font-semibold text-blue-300 mb-1">Anime</p>
 							<ul class="text-xs text-slate-300 space-y-1">
-								{#each tooltip.content.anime as title}
+								{#each tooltip.content.anime as title (title)}
 									<li>• {title}</li>
 								{/each}
 							</ul>

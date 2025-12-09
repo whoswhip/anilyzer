@@ -43,7 +43,12 @@
 		manga: Record<string, number>;
 	}> = [];
 	let mostActiveDay = { date: '', chapters: 0, unit: 'chapters' };
-	let streaks: any = {
+	type Streaks = {
+		longestStreak: { manga: number; anime: number };
+		currentStreak: { manga: number; anime: number };
+	};
+
+	let streaks: Streaks = {
 		longestStreak: { manga: 0, anime: 0 },
 		currentStreak: { manga: 0, anime: 0 }
 	};
@@ -79,7 +84,7 @@
 		reader.readAsText(file);
 	}
 
-	function analyzeData(data: any) {
+	function analyzeData(data: { activity: Activity[]; lists: List[] }) {
 		const activityData: Activity[] = data.activity;
 		activities = activityData;
 		lists = data.lists;
@@ -625,7 +630,7 @@
 						<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>
 						<div class="mt-2 text-sm text-slate-500">
 							{#if series.data && series.data.description}
-								{@html series.data.description.slice(0, 200) +
+								{series.data.description.slice(0, 200) +
 									(series.data.description.length > 200 ? '...' : '')}
 							{:else}
 								No description available.

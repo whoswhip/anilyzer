@@ -1,3 +1,5 @@
+import type { MangabakaSeries } from '$lib/types/series';
+
 interface CacheEntry<T> {
 	data: T;
 	expiresAt: number;
@@ -55,6 +57,6 @@ class Cache<T> {
 	}
 }
 
-export const seriesCache = new Cache<any>(24 * 60 * 60 * 1000);
+export const seriesCache = new Cache<MangabakaSeries[]>(24 * 60 * 60 * 1000);
 
 setInterval(() => seriesCache.cleanup(), 60 * 60 * 1000);
