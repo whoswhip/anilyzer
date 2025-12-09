@@ -9,10 +9,7 @@ Anilyzer takes [GDPR data exports](https://anilist.co/settings/account) from [An
 - Reading/watching streaks (current & longest)
 - And more!
 
-
 <img width="1337" height="394" alt="3811Qty7tDBb2BhS9APNbci7" src="https://github.com/user-attachments/assets/efde8e95-7639-4e0e-9e2d-6aa60941e998" />
-
-
 
 ## Self-hosting
 
@@ -25,36 +22,83 @@ Anilyzer takes [GDPR data exports](https://anilist.co/settings/account) from [An
 
 1. Clone the repository and install dependencies:
 
-```
+```bash
 git clone https://github.com/whoswhip/anilyzer.git
 cd anilyzer
 npm install
+```
+
+2. Create indexes on database (optional)
+   Creating indexes on the database will **greatly** increase lookup speeds.
+
+**Option A: Run the script**
+
+```bash
+npx ts-node ./scripts/create_indexes.ts
+```
+
+**Option B: Do it manually**
+
+1. Open your database client.
+2. Run the following SQL:
+
+```sql
+CREATE INDEX IF NOT EXISTS source_anilist_id_idx ON series (source_anilist_id);
 ```
 
 ### Configuration:
 
 Create an `.env` file with the following
 
-```
+```ini
 DATABASE_URL=/path/to/series.sqlite
 ```
 
 This should point to your extracted Mangabaka `.sqlite` file
 
-### Build Anilyzer:
+#### Personal Use or Development
 
-```
-npm run build
-```
+1. Clone and set up the project (as described above).
+2. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+   Access the website at `https://localhost:5173/` (or the link shown).
+3. Or preview the production build locally:
+   ```bash
+   npm run build
+   npm run preview
+   ```
 
-### Preview production build locally:
+#### For Production/Public Hosting
 
-```
-npm run preview
-```
+If you want to make Anilyzer **publically accessible**, follow these steps:
 
-For development with hot reload, use:
+1. Install the Node adapter:
+   ```bash
+   npm install -D @sveltejs/adapter-node
+   ```
+2. Edit `svelte.config.js` to use the Node adapter:
 
-```
-npm run dev
-```
+   ```js
+   import adapter from '@sveltejs/adapter-node';
+   import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+   const config = {
+   	preprocess: vitePreprocess(),
+   	kit: {
+   		adapter: adapter()
+   	}
+   };
+
+   export default config;
+   ```
+
+3. Build for production:
+   ```bash
+   npm run build
+   ```
+4. Start the server:
+   ```bash
+   node build
+   ```

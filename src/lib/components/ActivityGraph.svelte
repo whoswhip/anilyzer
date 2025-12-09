@@ -77,7 +77,8 @@
 		}
 	}
 
-	let today: Date;
+
+	let today = new Date();
 	let endDate: number;
 	let endDay: number;
 	let defaultStart: number;
@@ -88,7 +89,6 @@
 	let maxValue: number = 0;
 	let hasActivity: boolean = false;
 
-	$: today = new Date();
 	$: endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
 	$: endDay = new Date(endDate).getUTCDay();
 	$: defaultStart = endDate - (52 * 7 + endDay) * dayMs;
