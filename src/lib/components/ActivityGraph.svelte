@@ -78,20 +78,15 @@
 	}
 
 	let today = new Date();
-	let endDate: number;
-	let endDay: number;
-	let defaultStart: number;
-	let startDate: number;
+	let endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+	let endDay = new Date(endDate).getUTCDay();
+	let defaultStart = endDate - (52 * 7 + endDay) * dayMs;
+	let startDate = defaultStart;
 
 	let calendarDays: Array<{ timestamp: number; total: number }> = [];
 	let weeks: Array<Array<{ timestamp: number; total: number }>> = [];
 	let maxValue: number = 0;
 	let hasActivity: boolean = false;
-
-	$: endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-	$: endDay = new Date(endDate).getUTCDay();
-	$: defaultStart = endDate - (52 * 7 + endDay) * dayMs;
-	$: startDate = defaultStart;
 
 	$: {
 		calendarDays = [];
