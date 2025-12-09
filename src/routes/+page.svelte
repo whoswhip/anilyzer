@@ -5,6 +5,7 @@
 	import type { MangabakaSeries } from '$lib/types/series';
 	import { ObjectTypes, StatusNames } from '$lib/types/gdpr/enums';
 	import StatCard from '$lib/components/StatCard.svelte';
+	import ActivityGraph from '$lib/components/ActivityGraph.svelte';
 	import { browser } from '$app/environment';
 
 	interface StatItem {
@@ -32,7 +33,7 @@
 	let watchTimeMinutes: number = 0;
 	let readingStats = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
 	let history: Record<number, Activity[]> = {};
-	let dayEntries: Array<any> = [];
+	let dayEntries: Array<{ date: number; total: number; anime: Record<string, number>; manga: Record<string, number> }> = [];
 	let mostActiveDay = { date: '', chapters: 0, unit: 'chapters' };
 	let streaks: any = {
 		longestStreak: { manga: 0, anime: 0 },
@@ -105,24 +106,15 @@
 
 	$: mostActiveDay = (function () {
 		if (!Array.isArray(dayEntries) || dayEntries.length === 0) return { date: '', chapters: 0, unit: 'chapters' };
-		let top = { date: '', chapters: 0, unit: 'chapters' };
-		for (const d of dayEntries) {
-			const mangaTotal = (Object.values(d.manga || {}) as Array<number | string>).reduce<number>(
-				(s, v) => s + (Number(v) || 0),
-				0
-			);
-			const animeTotal = (Object.values(d.anime || {}) as Array<number | string>).reduce<number>(
-				(s, v) => s + (Number(v) || 0),
-				0
-			);
-			const amount = Math.max(mangaTotal, animeTotal);
-			if (amount <= 0) continue;
-			const unit = mangaTotal >= animeTotal ? 'chapters' : 'episodes';
-			if (amount > top.chapters) {
-				top = { date: new Date(d.date).toISOString(), chapters: amount, unit };
+		const top = dayEntries.reduce((max, d) => {
+			if (d.total > max.total) {
+				const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+				const unit = mangaTotal >= (d.total - mangaTotal) ? 'chapters' : 'episodes';
+				return { date: new Date(d.date).toISOString(), total: d.total, unit };
 			}
-		}
-		return top;
+			return max;
+		}, { date: '', total: 0, unit: 'chapters' });
+		return { date: top.date, chapters: top.total, unit: top.unit };
 	})();
 	
 	$: activitiesByHour = Array.from({ length: 24 }, (_, hour) => {
@@ -539,6 +531,10 @@
 				/>
 			{/each}
 		</div>
+	{/if}
+
+	{#if dayEntries.length > 0}
+		<ActivityGraph entries={dayEntries} listData={mostReadSeries} />
 	{/if}
 
 	{#if activitiesByHour.some(hourData => hourData.count > 0)}
