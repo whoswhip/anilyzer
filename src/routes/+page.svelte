@@ -22,6 +22,8 @@
 	let series: MangabakaSeries[] = [];
 	let includeRepeats = browser && localStorage.getItem('includeRepeats') !== 'false';
 	let fullClock = browser && localStorage.getItem('fullClock') !== 'false';
+	let hasActivity = false;
+	$: hasActivity = activities.length > 0 || lists.length > 0;
 
 	$: if (browser) {
 		localStorage.setItem('includeRepeats', String(includeRepeats));
@@ -34,7 +36,12 @@
 	let watchTimeMinutes: number = 0;
 	let readingStats = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
 	let history: Record<number, Activity[]> = {};
-	let dayEntries: Array<{ date: number; total: number; anime: Record<string, number>; manga: Record<string, number> }> = [];
+	let dayEntries: Array<{
+		date: number;
+		total: number;
+		anime: Record<string, number>;
+		manga: Record<string, number>;
+	}> = [];
 	let mostActiveDay = { date: '', chapters: 0, unit: 'chapters' };
 	let streaks: any = {
 		longestStreak: { manga: 0, anime: 0 },
@@ -106,25 +113,28 @@
 	$: dayEntries = buildDayEntries(activities);
 
 	$: mostActiveDay = (function () {
-		if (!Array.isArray(dayEntries) || dayEntries.length === 0) return { date: '', chapters: 0, unit: 'chapters' };
-		const top = dayEntries.reduce((max, d) => {
-			if (d.total > max.total) {
-				const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
-				const unit = mangaTotal >= (d.total - mangaTotal) ? 'chapters' : 'episodes';
-				return { date: new Date(d.date).toISOString(), total: d.total, unit };
-			}
-			return max;
-		}, { date: '', total: 0, unit: 'chapters' });
+		if (!Array.isArray(dayEntries) || dayEntries.length === 0)
+			return { date: '', chapters: 0, unit: 'chapters' };
+		const top = dayEntries.reduce(
+			(max, d) => {
+				if (d.total > max.total) {
+					const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+					const unit = mangaTotal >= d.total - mangaTotal ? 'chapters' : 'episodes';
+					return { date: new Date(d.date).toISOString(), total: d.total, unit };
+				}
+				return max;
+			},
+			{ date: '', total: 0, unit: 'chapters' }
+		);
 		return { date: top.date, chapters: top.total, unit: top.unit };
 	})();
-	
+
 	$: activitiesByHour = Array.from({ length: 24 }, (_, hour) => {
 		const activitiesByHour = activities.filter(
 			(activity) => new Date(activity.created_at).getUTCHours() === hour
 		);
 		return { hour, activities: activitiesByHour, count: activitiesByHour.length };
 	});
-
 
 	$: streaks = calculateStreaks(history);
 
@@ -196,7 +206,7 @@
 				: 'No activity data.'
 		}
 	];
-	
+
 	$: mostReadSeries = lists
 		.filter((list) => list.series_type === ObjectTypes.Manga)
 		.map((list) => {
@@ -334,9 +344,14 @@
 
 	function buildDayEntries(activities: Activity[]) {
 		if (!Array.isArray(activities)) return [];
-		const sorted = [...activities].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+		const sorted = [...activities].sort(
+			(a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)
+		);
 		const tracker = new Map<string, number>();
-		const dayMap: Record<number, { date: number; total: number; anime: Record<string, number>; manga: Record<string, number> }> = {};
+		const dayMap: Record<
+			number,
+			{ date: number; total: number; anime: Record<string, number>; manga: Record<string, number> }
+		> = {};
 
 		for (const activity of sorted) {
 			const ts = Date.parse(activity.created_at);
@@ -361,7 +376,9 @@
 		}
 
 		return Object.values(dayMap)
-			.filter((d) => d.total > 0 || Object.keys(d.anime).length > 0 || Object.keys(d.manga).length > 0)
+			.filter(
+				(d) => d.total > 0 || Object.keys(d.anime).length > 0 || Object.keys(d.manga).length > 0
+			)
 			.sort((a, b) => a.date - b.date);
 	}
 
@@ -398,9 +415,12 @@
 				const dayActivities = history[dates[i]];
 				const hasManga = dayActivities.some((a) => a.object_type === ObjectTypes.Manga + 1);
 				const hasAnime = dayActivities.some((a) => a.object_type === ObjectTypes.Anime + 1);
-				if (hasManga) tempStreak.manga += 1; else tempStreak.manga = 0;
-				if (hasAnime) tempStreak.anime += 1; else tempStreak.anime = 0;
-				if (hasManga || hasAnime) tempStreak.any += 1; else tempStreak.any = 0;
+				if (hasManga) tempStreak.manga += 1;
+				else tempStreak.manga = 0;
+				if (hasAnime) tempStreak.anime += 1;
+				else tempStreak.anime = 0;
+				if (hasManga || hasAnime) tempStreak.any += 1;
+				else tempStreak.any = 0;
 			} else {
 				tempStreak = { manga: 0, anime: 0, any: 0 };
 			}
@@ -416,8 +436,12 @@
 		if (diffFromToday <= 1) {
 			if (dates.length === 1) {
 				const lastDayActs = history[dates[0]];
-				currentStreak.manga = lastDayActs.some((a) => a.object_type === ObjectTypes.Manga + 1) ? 1 : 0;
-				currentStreak.anime = lastDayActs.some((a) => a.object_type === ObjectTypes.Anime + 1) ? 1 : 0;
+				currentStreak.manga = lastDayActs.some((a) => a.object_type === ObjectTypes.Manga + 1)
+					? 1
+					: 0;
+				currentStreak.anime = lastDayActs.some((a) => a.object_type === ObjectTypes.Anime + 1)
+					? 1
+					: 0;
 				currentStreak.any = currentStreak.manga || currentStreak.anime ? 1 : 0;
 			} else {
 				currentStreak = { ...tempStreak };
@@ -479,7 +503,9 @@
 	<div class="mt-5 mb-5 text-center">
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
-			class="border-2 border-dashed border-slate-775 bg-slate-850 p-10 rounded-lg cursor-pointer flex flex-col items-center justify-center hover:bg-slate-875 hover:border-sky-400 transition-colors duration-300"
+			class="border-2 border-dashed border-slate-775 bg-slate-850 {hasActivity
+				? 'p-5'
+				: 'p-10'} rounded-lg cursor-pointer flex flex-col items-center justify-center hover:bg-slate-875 hover:border-sky-400 transition-all duration-300"
 			on:drop={handleDrop}
 			on:dragover={(event) => {
 				event.preventDefault();
@@ -490,22 +516,28 @@
 			}}
 			on:click={() => document.getElementById('fileInput')?.click()}
 		>
-			<svg
-				class="w-16 h-16 text-blue-100"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-			>
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-				<polyline points="17 8 12 3 7 8"></polyline>
-				<line x1="12" y1="3" x2="12" y2="15"></line>
-			</svg>
-			<h2 class="text-2xl font-semibold mb-2.5 text-blue-100">Upload Your AniList Data</h2>
+			{#if !hasActivity}
+				<svg
+					class="w-16 h-16 text-blue-100"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+					<polyline points="17 8 12 3 7 8"></polyline>
+					<line x1="12" y1="3" x2="12" y2="15"></line>
+				</svg>
+			{/if}
+
+			<h2 class="text-2xl font-semibold {hasActivity ? 'mb-2.5' : ''} text-blue-100">
+				Upload Your AniList Data
+			</h2>
 			<p class="text-lg text-slate-400">
 				Drag and drop your <strong class="text-blue-400">gdpr_data.json</strong> file here or click to
 				browse
 			</p>
+
 			<input
 				type="file"
 				id="fileInput"
@@ -538,20 +570,22 @@
 		<ActivityGraph entries={dayEntries} listData={mostReadSeries} />
 	{/if}
 
-	{#if activitiesByHour.some(hourData => hourData.count > 0)}
+	{#if activitiesByHour.some((hourData) => hourData.count > 0)}
 		<div class="mt-10">
 			<h2 class="text-2xl font-semibold mb-4 text-blue-100">Activity by Hour</h2>
 			<div class="flex gap-1 flex-wrap">
 				{#each activitiesByHour as hourData (hourData.hour)}
-					{@const maxCount = Math.max(...activitiesByHour.map(h => h.count)) || 1}
+					{@const maxCount = Math.max(...activitiesByHour.map((h) => h.count)) || 1}
 					<div
 						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 group relative"
 						style="background-color: {getColor(hourData.count, maxCount, true)}"
 					>
 						{fullClock
 							? hourData.hour.toString().padStart(2, '0') + ':00'
-							: ((hourData.hour % 12) || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
-						<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+							: (hourData.hour % 12 || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
+						<div
+							class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+						>
 							{hourData.count} activit{hourData.count === 1 ? 'y' : 'ies'}
 						</div>
 					</div>
@@ -564,8 +598,10 @@
 		<div>
 			<h2 class="text-2xl font-semibold mt-10 mb-4 text-blue-100">Most Read Series</h2>
 
-			{#each mostReadSeries.slice(0,10) as series (series.series_id)}
-				<div class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg border border-slate-775">
+			{#each mostReadSeries.slice(0, 10) as series (series.series_id)}
+				<div
+					class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg border border-slate-775"
+				>
 					<img
 						src={getCoverURL(series.series_id, 'medium')}
 						alt={series.data
@@ -574,7 +610,12 @@
 						class="w-32 h-48 object-cover rounded"
 					/>
 					<div>
-						<a class="text-lg font-semibold text-blue-100 hover:text-blue-400" href={`https://anilist.co/manga/${series.series_id}`} target="_blank" rel="noopener noreferrer">
+						<a
+							class="text-lg font-semibold text-blue-100 hover:text-blue-400"
+							href={`https://anilist.co/manga/${series.series_id}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
 							{series.data
 								? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
 								: 'Unknown Title'}
@@ -618,12 +659,7 @@
 					>
 				</div>
 				<div class="flex items-center">
-					<input
-						type="checkbox"
-						id="fullClockSettings"
-						bind:checked={fullClock}
-						class="mr-2"
-					/>
+					<input type="checkbox" id="fullClockSettings" bind:checked={fullClock} class="mr-2" />
 					<label for="fullClockSettings" class="text-slate-400"
 						>Display time in 24-hour format</label
 					>
