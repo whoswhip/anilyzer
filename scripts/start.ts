@@ -67,30 +67,33 @@ async function check() {
 	try {
 		const remoteTS = await fetch(TS_URL);
 
-		if (!fs.existsSync(LOCAL_TS_FILE)) {
-			fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
-		}
-
-		const localTS = fs.readFileSync(LOCAL_TS_FILE, 'utf8').trim();
-
-		const remoteEpoch = Date.parse(remoteTS);
-		const localEpoch = Date.parse(localTS);
-
 		let updated = false;
+		let localTS = null;
+		let localEpoch = 0;
+		const remoteEpoch = Date.parse(remoteTS);
 
-		if (remoteEpoch > localEpoch) {
-			console.log('New database found. Downloading...');
+		if (!fs.existsSync(LOCAL_TS_FILE)) {
+			console.log('No local timestamp found. Downloading database...');
 			await downloadFile(DB_URL, DB_ZST);
-
 			execSync(`unzstd ${DB_ZST}`);
 			fs.unlinkSync(DB_ZST);
-
-            fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
-            createIndexes();
-
-            console.log('Database updated.');
-
+			fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
+			createIndexes();
+			console.log('Database updated.');
 			updated = true;
+		} else {
+			localTS = fs.readFileSync(LOCAL_TS_FILE, 'utf8').trim();
+			localEpoch = Date.parse(localTS);
+			if (remoteEpoch > localEpoch) {
+				console.log('New database found. Downloading...');
+				await downloadFile(DB_URL, DB_ZST);
+				execSync(`unzstd ${DB_ZST}`);
+				fs.unlinkSync(DB_ZST);
+				fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
+				createIndexes();
+				console.log('Database updated.');
+				updated = true;
+			}
 		}
 
 		if (updated || fs.existsSync(DB_FILE)) {
