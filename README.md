@@ -2,10 +2,17 @@
 
 Anilyzer takes [GDPR data exports](https://anilist.co/settings/account) from [AniList](https://anilist.co/) and analyzes your data to give you insights such as:
 
+> **For the most accurate results, disable [Activity Merging](https://anilist.co/settings/media) in your AniList settings.**
+
 - Chapters read
 - Estimated reading time/speed
 - Reading/watching streaks (current & longest)
 - And more!
+
+
+<img width="1337" height="394" alt="3811Qty7tDBb2BhS9APNbci7" src="https://github.com/user-attachments/assets/efde8e95-7639-4e0e-9e2d-6aa60941e998" />
+
+
 
 ## Self-hosting
 
