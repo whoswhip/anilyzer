@@ -45,8 +45,8 @@
 	let normalizedEntries: ActivityEntry[] = [];
 
 	$: {
-		entryTotals = new SvelteMap<string, number>();
-		entryDetails = new SvelteMap<string, { manga: MangabakaSeries[]; anime: string[] }>();
+		entryTotals = new SvelteMap();
+		entryDetails = new SvelteMap();
 		normalizedEntries = Array.isArray(entries) ? entries : [];
 		for (const entry of normalizedEntries) {
 			const rawDate = typeof entry.date === 'string' ? Date.parse(entry.date) : Number(entry.date);
@@ -77,26 +77,41 @@
 		}
 	}
 
-	const today = new Date();
-	const endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-	const endDay = new Date(endDate).getUTCDay();
-	const defaultStart = endDate - (52 * 7 + endDay) * dayMs;
-	const startDate = defaultStart;
+	let today: Date;
+	let endDate: number;
+	let endDay: number;
+	let defaultStart: number;
+	let startDate: number;
 
-	const calendarDays: Array<{ timestamp: number; total: number }> = [];
-	for (let current = startDate; current <= endDate; current += dayMs) {
-		const key = toKey(current);
-		const total = entryTotals.get(key) ?? 0;
-		calendarDays.push({ timestamp: current, total });
+	let calendarDays: Array<{ timestamp: number; total: number }> = [];
+	let weeks: Array<Array<{ timestamp: number; total: number }>> = [];
+	let maxValue: number = 0;
+	let hasActivity: boolean = false;
+
+	$: today = new Date();
+	$: endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+	$: endDay = new Date(endDate).getUTCDay();
+	$: defaultStart = endDate - (52 * 7 + endDay) * dayMs;
+	$: startDate = defaultStart;
+
+	$: {
+		calendarDays = [];
+		for (let current = startDate; current <= endDate; current += dayMs) {
+			const key = toKey(current);
+			const total = entryTotals.get(key) ?? 0;
+			calendarDays.push({ timestamp: current, total });
+		}
 	}
 
-	const weeks: Array<Array<{ timestamp: number; total: number }>> = [];
-	for (let i = 0; i < calendarDays.length; i += 7) {
-		weeks.push(calendarDays.slice(i, i + 7));
+	$: {
+		weeks = [];
+		for (let i = 0; i < calendarDays.length; i += 7) {
+			weeks.push(calendarDays.slice(i, i + 7));
+		}
 	}
 
-	const maxValue = Math.max(0, ...Array.from(entryTotals.values()));
-	const hasActivity = maxValue > 0;
+	$: maxValue = Math.max(0, ...Array.from(entryTotals.values()));
+	$: hasActivity = maxValue > 0;
 
 	let tooltip: TooltipState = {
 		text: '',
