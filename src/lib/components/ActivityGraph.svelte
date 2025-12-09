@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { MangabakaSeries } from '$lib/types/series';
+    import { colors } from '$lib/constants';
+    import { getColor } from '$lib/utils';
+
 	type ActivityEntry = {
 		date: number | string;
 		total?: number;
@@ -9,6 +12,7 @@
 
 	type TooltipState = {
 		text: string;
+        element?: HTMLDivElement;
 		x: number;
 		y: number;
 		visible: boolean;
@@ -56,7 +60,7 @@
 					list?.data?.title ||
 					list?.data?.romanizedTitle ||
 					list?.data?.nativeTitle ||
-					`Series ${id}`
+					id
 				);
 			});
 			const mangaSeries = Object.keys(entry.manga || {}).map((id) => {
@@ -67,7 +71,7 @@
 						list?.data?.title ||
 						list?.data?.romanizedTitle ||
 						list?.data?.nativeTitle ||
-						`Series ${id}`
+						`Series ${id}`,
 				} as MangabakaSeries;
 			});
 
@@ -103,18 +107,6 @@
 	$: minValue = Math.min(...Array.from(entryTotals.values()).filter((v) => v > 0), maxValue || 1);
 	$: hasActivity = maxValue > 0;
 
-	const colors = [
-		'#1a2332',
-		'#1d3a48',
-		'#1d4e5f',
-		'#176d82',
-		'#0b7fa8',
-		'#0582cc',
-		'#0395e8',
-		'#02a9ff',
-		'#43bfff',
-		'#86d6ff'
-	];
 	let tooltip: TooltipState = {
 		text: '',
 		x: 0,
@@ -125,15 +117,17 @@
 	};
 	let tooltipElement: HTMLDivElement | null = null;
 
-	const showTooltip = (day: { timestamp: number; total: number }, event: MouseEvent) => {
+	const showTooltip = (day: { timestamp: number; total: number }, event: MouseEvent, element: HTMLDivElement) => {
 		if (tooltip.frozen) return;
 
 		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
+        element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
 		tooltip = {
 			text: `${date} · ${day.total} activity`,
+            element: element,
 			x: event.clientX,
 			y: event.clientY,
 			visible: true,
@@ -166,13 +160,17 @@
 		tooltip.y = finalY;
 	};
 
-	const freezeTooltip = (day: { timestamp: number; total: number }) => {
+	const freezeTooltip = (day: { timestamp: number; total: number }, element: HTMLDivElement) => {
 		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
+		
+		tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
+		element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
 		tooltip = {
 			text: `${date} · ${day.total} activity`,
+			element: element,
 			x: tooltip.x,
 			y: tooltip.y,
 			visible: true,
@@ -183,20 +181,13 @@
 
 	const hideTooltip = () => {
 		if (tooltip.frozen) return;
+        tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		tooltip = { text: '', x: 0, y: 0, visible: false, frozen: false, content: null };
 	};
 
 	const unfreezeTooltip = () => {
+        tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		tooltip = { ...tooltip, frozen: false };
-	};
-
-	const colorFor = (value: number) => {
-		if (!Number.isFinite(value) || value <= 0) return colors[0];
-
-		const normalized = value / maxValue;
-		const idx = Math.min(colors.length - 1, Math.ceil(normalized * (colors.length - 1)));
-
-		return colors[idx];
 	};
 
 	const formatDate = (timestamp: number) => new Date(timestamp).toISOString().slice(0, 10);
@@ -236,12 +227,12 @@
 						{#each week as day (day.timestamp)}
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<div
-								class="w-4 h-4 rounded transition-transform hover:scale-150 cursor-pointer"
-								style={`background:${colorFor(day.total)}`}
-								on:mouseenter={(event) => showTooltip(day, event)}
+								class="w-4 h-4 rounded transition-transform hover:scale-150 cursor-pointer hover:outline-1 outline-blue-500"
+								style={`background:${getColor(day.total, maxValue)}`}
+								on:mouseenter={(event) => showTooltip(day, event, event.currentTarget as HTMLDivElement)}
 								on:mousemove={(event) => moveMouse(event)}
 								on:mouseleave={hideTooltip}
-								on:click={() => freezeTooltip(day)}
+								on:click={(event) => freezeTooltip(day, event.currentTarget as HTMLDivElement)}
 								aria-label={`${formatDate(day.timestamp)} ${day.total} activity`}
 							></div>
 						{/each}

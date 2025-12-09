@@ -7,6 +7,7 @@
 	import StatCard from '$lib/components/StatCard.svelte';
 	import ActivityGraph from '$lib/components/ActivityGraph.svelte';
 	import { browser } from '$app/environment';
+	import { getColor } from '$lib/utils';
 
 	interface StatItem {
 		title: string;
@@ -543,11 +544,9 @@
 			<div class="flex gap-1 flex-wrap">
 				{#each activitiesByHour as hourData (hourData.hour)}
 					{@const maxCount = Math.max(...activitiesByHour.map(h => h.count)) || 1}
-					{@const intensity = hourData.count / maxCount}
-					{@const lightness = Math.min(70, 100 - intensity * 90)}
 					<div
 						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 group relative"
-						style="background-color: hsl(200, 80%, {lightness}%)"
+						style="background-color: {getColor(hourData.count, maxCount, true)}"
 					>
 						{fullClock
 							? hourData.hour.toString().padStart(2, '0') + ':00'
