@@ -77,7 +77,6 @@
 		}
 	}
 
-
 	let today = new Date();
 	let endDate: number;
 	let endDay: number;
