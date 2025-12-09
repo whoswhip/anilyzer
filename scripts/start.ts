@@ -7,6 +7,7 @@ import { execSync, spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import { createIndexes } from './create_indexes.ts';
+import 'dotenv/config';
 
 const TS_URL = 'https://api.mangabaka.dev/v1/database/series.timestamp.txt';
 const DB_URL = 'https://api.mangabaka.dev/v1/database/series.sqlite.zst';
@@ -53,6 +54,8 @@ function startServer() {
 	if (server) {
 		server.kill();
 	}
+
+	process.env.PORT = process.env.PORT && process.env.PORT !== '' ? process.env.PORT : '3000';
 
 	server = spawn('node', ['build/index.js'], {
 		stdio: 'inherit'
