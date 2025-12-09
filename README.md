@@ -74,31 +74,11 @@ This should point to your extracted Mangabaka `.sqlite` file
 
 If you want to make Anilyzer **publically accessible**, follow these steps:
 
-1. Install the Node adapter:
-   ```bash
-   npm install -D @sveltejs/adapter-node
-   ```
-2. Edit `svelte.config.js` to use the Node adapter:
-
-   ```js
-   import adapter from '@sveltejs/adapter-node';
-   import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-
-   const config = {
-   	preprocess: vitePreprocess(),
-   	kit: {
-   		adapter: adapter()
-   	}
-   };
-
-   export default config;
-   ```
-
-3. Build for production:
+1. Build for production:
    ```bash
    npm run build
    ```
-4. Start the server:
+2. Start the server:
    ```bash
    node build/index.js
    ```
