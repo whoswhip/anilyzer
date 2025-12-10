@@ -132,8 +132,8 @@
 		tooltip = {
 			text: `${date} · ${day.total} activity`,
 			element: element,
-			x: event.clientX,
-			y: event.clientY,
+			x: event.pageX,
+			y: event.pageY,
 			visible: true,
 			frozen: false,
 			content: details
@@ -142,7 +142,7 @@
 
 	const moveMouse = (event: MouseEvent) => {
 		if (tooltip.frozen || !tooltip.visible) return;
-		updateTooltipPosition(event.clientX, event.clientY);
+		updateTooltipPosition(event.pageX, event.pageY);
 	};
 
 	const updateTooltipPosition = (x: number, y: number) => {
@@ -153,11 +153,11 @@
 		let finalX = x + padding;
 		let finalY = y + padding;
 
-		if (finalX + rect.width > window.innerWidth) {
-			finalX = Math.max(0, window.innerWidth - rect.width - padding);
+		if (finalX + rect.width > window.scrollX + window.innerWidth) {
+			finalX = Math.max(window.scrollX, window.scrollX + window.innerWidth - rect.width - padding);
 		}
-		if (finalY + rect.height > window.innerHeight) {
-			finalY = Math.max(0, window.innerHeight - rect.height - padding);
+		if (finalY + rect.height > window.scrollY + window.innerHeight) {
+			finalY = Math.max(window.scrollY, window.scrollY + window.innerHeight - rect.height - padding);
 		}
 
 		tooltip.x = finalX;
@@ -253,7 +253,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			bind:this={tooltipElement}
-			class={`fixed z-50 bg-slate-900 text-blue-100 rounded shadow-lg border border-slate-775 ${tooltip.frozen ? '' : 'pointer-events-none'}`}
+			class={`absolute z-50 bg-slate-900 text-blue-100 rounded shadow-lg border border-slate-775 ${tooltip.frozen ? '' : 'pointer-events-none'}`}
 			style={`top:${tooltip.y}px;left:${tooltip.x}px;transition:all 0.1s ease-out;`}
 			on:mouseleave={unfreezeTooltip}
 		>
