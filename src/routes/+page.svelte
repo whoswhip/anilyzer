@@ -7,7 +7,7 @@
 	import StatCard from '$lib/components/StatCard.svelte';
 	import ActivityGraph from '$lib/components/ActivityGraph.svelte';
 	import { browser } from '$app/environment';
-	import { getColor } from '$lib/utils';
+	import { getColor, darkenColor } from '$lib/utils';
 
 	interface StatItem {
 		title: string;
@@ -582,12 +582,21 @@
 				{#each activitiesByHour as hourData (hourData.hour)}
 					{@const maxCount = Math.max(...activitiesByHour.map((h) => h.count)) || 1}
 					<div
-						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 group relative"
-						style="background-color: {getColor(hourData.count, maxCount, true)}"
+						class="w-12 h-12 rounded flex items-center justify-center text-xs font-semibold cursor-pointer transition-all hover:scale-110 relative group"
+						style="background-color: {getColor(hourData.count, maxCount)}"
 					>
-						{fullClock
-							? hourData.hour.toString().padStart(2, '0') + ':00'
-							: (hourData.hour % 12 || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
+						<span class="text-shadow-black text-shadow-sm">
+							{fullClock
+								? hourData.hour.toString().padStart(2, '0') + ':00'
+								: (hourData.hour % 12 || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
+						</span>
+
+						<span
+							class="sm:hidden absolute bottom-0 left-1/2 w-12 -translate-x-1/2 text-blue-100 px-1 rounded-b-sm text-xs whitespace-nowrap text-center"
+							style="background-color: {darkenColor(getColor(hourData.count, maxCount), 0.6)}"
+						>
+							{hourData.count}
+						</span>
 						<div
 							class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
 						>
@@ -612,6 +621,7 @@
 						alt={series.data
 							? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
 							: 'Cover'}
+						loading="lazy"
 						class="w-32 h-48 object-cover rounded"
 					/>
 					<div>
