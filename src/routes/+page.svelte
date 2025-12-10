@@ -576,8 +576,8 @@
 	{/if}
 
 	{#if activitiesByHour.some((hourData) => hourData.count > 0)}
-		<div class="mt-10">
-			<h2 class="text-2xl font-semibold mb-4 text-blue-100">Activity by Hour</h2>
+		<div class="bg-slate-850 border border-slate-775 rounded-lg p-5 mt-10">
+			<h2 class="text-2xl font-semibold text-blue-100 mb-5">Activity by Hour</h2>
 			<div class="flex gap-1 flex-wrap">
 				{#each activitiesByHour as hourData (hourData.hour)}
 					{@const maxCount = Math.max(...activitiesByHour.map((h) => h.count)) || 1}
@@ -598,7 +598,7 @@
 							{hourData.count}
 						</span>
 						<div
-							class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+							class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-775 text-blue-100 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
 						>
 							{hourData.count} activit{hourData.count === 1 ? 'y' : 'ies'}
 						</div>
