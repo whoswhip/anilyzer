@@ -493,15 +493,15 @@
 		if (!seriesData) return '';
 		switch (quaity) {
 			case 'small':
-				return seriesData.coverX150X1 + '.avif';
+				return seriesData.coverX150X1;
 			case 'medium':
-				return seriesData.coverX250X1 + '.avif';
+				return seriesData.coverX250X1;
 			case 'large':
-				return seriesData.coverX350X1 + '.avif';
+				return seriesData.coverX350X1;
 			case 'raw':
 				return seriesData.coverRawUrl;
 			default:
-				return seriesData.coverX250X1 + '.avif';
+				return seriesData.coverX250X1;
 		}
 	}
 </script>
