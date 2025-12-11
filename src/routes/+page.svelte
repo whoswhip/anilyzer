@@ -488,10 +488,10 @@
 		}
 	}
 
-	function getCoverURL(seriesId: number, quaity: 'small' | 'medium' | 'large' | 'raw' = 'medium') {
+	function getCoverURL(seriesId: number, quality: 'small' | 'medium' | 'large' | 'raw' = 'medium') {
 		const seriesData = series.find((s) => Number(s.sourceAnilistId) === seriesId);
 		if (!seriesData) return '';
-		switch (quaity) {
+		switch (quality) {
 			case 'small':
 				return seriesData.coverX150X1;
 			case 'medium':
