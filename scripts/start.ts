@@ -100,6 +100,10 @@ async function check() {
 			console.log('Restarting server...');
 			startServer();
 		}
+		else if (fs.existsSync(DB_FILE) && !server) {
+			console.log('Starting server...');
+			startServer();
+		}
 	} catch (e) {
 		console.error('Error during check:', e);
 	}
