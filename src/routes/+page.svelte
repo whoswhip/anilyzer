@@ -8,6 +8,8 @@
 	import ActivityGraph from '$lib/components/ActivityGraph.svelte';
 	import { browser } from '$app/environment';
 	import { getColor, darkenColor } from '$lib/utils';
+	import { slide } from 'svelte/transition';
+	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload } from '@lucide/svelte';
 
 	interface StatItem {
 		title: string;
@@ -23,6 +25,7 @@
 	let includeRepeats = browser && localStorage.getItem('includeRepeats') !== 'false';
 	let fullClock = browser && localStorage.getItem('fullClock') !== 'false';
 	let hasActivity = false;
+	let mostReadSeriesFolded = false;
 	$: hasActivity = activities.length > 0 || lists.length > 0;
 
 	$: if (browser) {
@@ -522,17 +525,7 @@
 			on:click={() => document.getElementById('fileInput')?.click()}
 		>
 			{#if !hasActivity}
-				<svg
-					class="w-16 h-16 text-blue-100"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-					<polyline points="17 8 12 3 7 8"></polyline>
-					<line x1="12" y1="3" x2="12" y2="15"></line>
-				</svg>
+				<Upload class="w-16 h-16 text-blue-100" />
 			{/if}
 
 			<h2 class="text-2xl font-semibold {hasActivity ? 'mb-2.5' : ''} text-blue-100">
@@ -609,48 +602,64 @@
 	{/if}
 
 	{#if mostReadSeries.length > 0}
-		<div>
-			<h2 class="text-2xl font-semibold mt-10 mb-4 text-blue-100">Most Read Series</h2>
-
-			{#each mostReadSeries.slice(0, 10) as series (series.series_id)}
-				<div
-					class="flex items-center space-x-4 mt-6 p-4 bg-slate-850 rounded-lg border border-slate-775"
+		<div class="bg-slate-850 border border-slate-775 rounded-lg p-5 mt-10">
+			<div class="w-full flex items-center justify-between">
+				<h2 class="text-2xl font-semibold text-blue-100">Most Read Series</h2>
+				<button
+					class="text-sm text-blue-100 hover:text-blue-400"
+					on:click={() => (mostReadSeriesFolded = !mostReadSeriesFolded)}
 				>
-					<img
-						src={getCoverURL(series.series_id, 'medium')}
-						alt={series.data
-							? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
-							: 'Cover'}
-						loading="lazy"
-						class="w-32 h-48 object-cover rounded"
-					/>
-					<div>
-						<a
-							class="text-lg font-semibold text-blue-100 hover:text-blue-400"
-							href={series.data
-								? `https://mangabaka.org/${series.data.id}`
-								: `https://anilist.co/manga/${series.series_id}`}
-							target="_blank"
-							rel="noopener noreferrer"
+					{#if mostReadSeriesFolded}
+						<ArrowUp></ArrowUp>
+					{:else}
+						<ArrowDown></ArrowDown>
+					{/if}
+				</button>
+			</div>
+
+			{#if !mostReadSeriesFolded}
+				<div transition:slide>
+					{#each mostReadSeries.slice(0, 10) as series (series.series_id)}
+						<div
+							class="flex items-center space-x-4 mt-6 p-4 bg-slate-900 rounded-lg border border-slate-800"
 						>
-							{series.data
-								? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
-								: 'Unknown Title'}
-						</a>
-						<p class="text-slate-400">Chapters Read: {series.progress}</p>
-						<p class="text-slate-400">Status: {StatusNames[series.status]}</p>
-						<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>
-						<div class="mt-2 text-sm text-slate-500">
-							{#if series.data && series.data.description}
-								{series.data.description.slice(0, 200) +
-									(series.data.description.length > 200 ? '...' : '')}
-							{:else}
-								No description available.
-							{/if}
+							<img
+								src={getCoverURL(series.series_id, 'medium')}
+								alt={series.data
+									? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
+									: 'Cover'}
+								loading="lazy"
+								class="w-32 h-48 object-cover rounded"
+							/>
+							<div>
+								<a
+									class="text-lg font-semibold text-blue-100 hover:text-blue-400"
+									href={series.data
+										? `https://mangabaka.org/${series.data.id}`
+										: `https://anilist.co/manga/${series.series_id}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{series.data
+										? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
+										: 'Unknown Title'}
+								</a>
+								<p class="text-slate-400">Chapters Read: {series.progress}</p>
+								<p class="text-slate-400">Status: {StatusNames[series.status]}</p>
+								<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>
+								<div class="mt-2 text-sm text-slate-500">
+									{#if series.data && series.data.description}
+										{series.data.description.slice(0, 200) +
+											(series.data.description.length > 200 ? '...' : '')}
+									{:else}
+										No description available.
+									{/if}
+								</div>
+							</div>
 						</div>
-					</div>
+					{/each}
 				</div>
-			{/each}
+			{/if}
 		</div>
 	{/if}
 
@@ -696,41 +705,13 @@
 		on:click={() => (settingsOpen = true)}
 		aria-label="Open Settings"
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="32"
-			height="32"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			class="lucide lucide-settings-icon lucide-settings"
-			><path
-				d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
-			/><circle cx="12" cy="12" r="3" /></svg
-		>
+		<Settings size="32" />
 	</button>
 	<a
 		href="https://github.com/whoswhip/anilyzer"
 		aria-label="github"
 		class="p-2 fixed bottom-20 right-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-100 rounded-full shadow-lg transition-colors duration-300"
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="32"
-			height="32"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="2"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			class="lucide lucide-github-icon lucide-github"
-			><path
-				d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"
-			/><path d="M9 18c-4.51 2-5-2-7-2" /></svg
-		>
+		<GithubIcon size="32" />
 	</a>
 </main>
