@@ -1,5 +1,5 @@
 export interface MangabakaSeries {
-	mangabakaId: number;
+	id: number;
 	state: string;
 	title: string;
 	nativeTitle: string;

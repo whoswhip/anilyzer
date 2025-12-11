@@ -627,7 +627,7 @@
 					<div>
 						<a
 							class="text-lg font-semibold text-blue-100 hover:text-blue-400"
-							href={`https://anilist.co/manga/${series.series_id}`}
+							href={`${series.data ? `https://mangabaka.org/${series.data.id}` : `https://anilist.co/manga/${series.series_id}`}`}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
