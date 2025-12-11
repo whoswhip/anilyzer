@@ -96,7 +96,7 @@ async function check() {
 			}
 		}
 
-		if (updated || fs.existsSync(DB_FILE)) {
+		if (updated && fs.existsSync(DB_FILE)) {
 			console.log('Restarting server...');
 			startServer();
 		}
