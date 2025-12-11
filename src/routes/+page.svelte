@@ -627,7 +627,9 @@
 					<div>
 						<a
 							class="text-lg font-semibold text-blue-100 hover:text-blue-400"
-							href={`${series.data ? `https://mangabaka.org/${series.data.id}` : `https://anilist.co/manga/${series.series_id}`}`}
+							href={series.data
+								? `https://mangabaka.org/${series.data.id}`
+								: `https://anilist.co/manga/${series.series_id}`}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
@@ -652,43 +654,43 @@
 		</div>
 	{/if}
 
-	<div
-		class="fixed w-full h-screen backdrop-blur-sm top-0 left-0 {settingsOpen
-			? 'flex'
-			: 'hidden'} items-center justify-center z-50"
-	>
+	{#if settingsOpen}
 		<div
-			class="max-w-[1400px] w-full m-4 bg-slate-850 border border-slate-775 rounded-lg p-6 relative"
+			class="fixed w-full h-screen backdrop-blur-sm top-0 left-0 flex items-center justify-center z-50"
 		>
-			<h2 class="text-2xl font-semibold mb-4 text-blue-100">Settings</h2>
-			<div class="space-y-4">
-				<div class="flex items-center">
-					<input
-						type="checkbox"
-						id="includeRepeatsSettings"
-						bind:checked={includeRepeats}
-						class="mr-2"
-					/>
-					<label for="includeRepeatsSettings" class="text-slate-400"
-						>Include repeats in calculations</label
-					>
-				</div>
-				<div class="flex items-center">
-					<input type="checkbox" id="fullClockSettings" bind:checked={fullClock} class="mr-2" />
-					<label for="fullClockSettings" class="text-slate-400"
-						>Display time in 24-hour format</label
-					>
-				</div>
-			</div>
-			<button
-				class="absolute top-4 right-4 text-slate-400 hover:text-blue-400 text-4xl"
-				on:click={() => (settingsOpen = false)}
-				aria-label="Close Settings"
+			<div
+				class="max-w-[1400px] w-full m-4 bg-slate-850 border border-slate-775 rounded-lg p-6 relative"
 			>
-				&times;
-			</button>
+				<h2 class="text-2xl font-semibold mb-4 text-blue-100">Settings</h2>
+				<div class="space-y-4">
+					<div class="flex items-center">
+						<input
+							type="checkbox"
+							id="includeRepeatsSettings"
+							bind:checked={includeRepeats}
+							class="mr-2"
+						/>
+						<label for="includeRepeatsSettings" class="text-slate-400"
+							>Include repeats in calculations</label
+						>
+					</div>
+					<div class="flex items-center">
+						<input type="checkbox" id="fullClockSettings" bind:checked={fullClock} class="mr-2" />
+						<label for="fullClockSettings" class="text-slate-400"
+							>Display time in 24-hour format</label
+						>
+					</div>
+				</div>
+				<button
+					class="absolute top-4 right-4 text-slate-400 hover:text-blue-400 text-4xl"
+					on:click={() => (settingsOpen = false)}
+					aria-label="Close Settings"
+				>
+					&times;
+				</button>
+			</div>
 		</div>
-	</div>
+	{/if}
 	<button
 		class="p-2 fixed bottom-6 right-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-100 rounded-full shadow-lg transition-colors duration-300 cursor-pointer"
 		on:click={() => (settingsOpen = true)}

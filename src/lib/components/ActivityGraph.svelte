@@ -157,7 +157,10 @@
 			finalX = Math.max(window.scrollX, window.scrollX + window.innerWidth - rect.width - padding);
 		}
 		if (finalY + rect.height > window.scrollY + window.innerHeight) {
-			finalY = Math.max(window.scrollY, window.scrollY + window.innerHeight - rect.height - padding);
+			finalY = Math.max(
+				window.scrollY,
+				window.scrollY + window.innerHeight - rect.height - padding
+			);
 		}
 
 		tooltip.x = finalX;
