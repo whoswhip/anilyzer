@@ -11,8 +11,10 @@ Anilyzer takes [GDPR data exports](https://anilist.co/settings/account) from [An
 
 <img width="1337" height="394" alt="3811Qty7tDBb2BhS9APNbci7" src="https://github.com/user-attachments/assets/efde8e95-7639-4e0e-9e2d-6aa60941e998" />
 
-#### Data Exporters 
+#### Data Exporters
+
 GDPR data exports are not the only way to get your data, you can also use separate programs to export your data into a compatible format for Anilyzer such as the following:
+
 - [anilyzer-data-export](https://github.com/whoswhip/anilyzer-data-exporter)
 
 ## Self-hosting

@@ -111,7 +111,8 @@ export async function GET({ url }: RequestEvent) {
 				process.env.DATABASE_FULL === 'true'
 					? {
 							...baseSelection,
-							sourceMyAnimeListResponsePopularity: (series as any).sourceMyAnimeListResponsePopularity,
+							sourceMyAnimeListResponsePopularity: (series as any)
+								.sourceMyAnimeListResponsePopularity,
 							sourceAnilistResponsePopularity: (series as any).sourceAnilistResponsePopularity
 						}
 					: baseSelection;

@@ -24,6 +24,10 @@
 	let series: MangabakaSeries[] = [];
 	let includeRepeats = browser && localStorage.getItem('includeRepeats') !== 'false';
 	let fullClock = browser && localStorage.getItem('fullClock') !== 'false';
+	let fallbackAverageReadingTime =
+		browser && localStorage.getItem('fallbackAverageReadingTime')
+			? parseFloat(localStorage.getItem('fallbackAverageReadingTime') || '5')
+			: 5;
 	let hasActivity = false;
 	let mostReadSeriesFolded = false;
 	$: hasActivity = activities.length > 0 || lists.length > 0;
@@ -31,6 +35,7 @@
 	$: if (browser) {
 		localStorage.setItem('includeRepeats', String(includeRepeats));
 		localStorage.setItem('fullClock', String(fullClock));
+		localStorage.setItem('fallbackAverageReadingTime', String(fallbackAverageReadingTime));
 	}
 	let settingsOpen: boolean = false;
 
@@ -277,7 +282,7 @@
 		const averageMinutesPerChapter =
 			chainedReadingTimes.length > 0
 				? chainedReadingTimes.reduce((sum, val) => sum + val, 0) / chainedReadingTimes.length
-				: 0;
+				: fallbackAverageReadingTime;
 		const rangeMinutes = rangeActivities.reduce((sum, entry) => {
 			return sum + entry.progress * averageMinutesPerChapter;
 		}, 0);
@@ -688,6 +693,18 @@
 						<label for="fullClockSettings" class="text-slate-400"
 							>Display time in 24-hour format</label
 						>
+					</div>
+					<div class="flex items-center">
+						<label for="fallbackAverageReadingTime" class="text-slate-400 mr-2"
+							>Fallback Average Reading Time (minutes per chapter):</label
+						>
+						<input
+							type="number"
+							id="fallbackAverageReadingTime"
+							bind:value={fallbackAverageReadingTime}
+							min="1"
+							class="w-20 p-1 rounded border border-slate-700 bg-slate-800 text-blue-100"
+						/>
 					</div>
 				</div>
 				<button
