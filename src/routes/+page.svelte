@@ -626,7 +626,7 @@
 				<div transition:slide>
 					{#each mostReadSeries.slice(0, 10) as series (series.series_id)}
 						<div
-							class="flex items-center space-x-4 mt-6 p-4 bg-slate-900 rounded-lg border border-slate-800"
+							class="flex items-center space-x-4 mt-6 p-4 bg-slate-875 rounded-lg border border-slate-800"
 						>
 							<img
 								src={getCoverURL(series.series_id, 'medium')}
