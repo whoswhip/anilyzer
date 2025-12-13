@@ -24,7 +24,7 @@
 	export let entries: ActivityEntry[] = [];
 	export let listData: Array<{
 		series_id: number;
-		data?: { title?: string | null; romanizedTitle?: string | null; nativeTitle?: string | null };
+		data?: { title?: string; romanizedTitle?: string; nativeTitle?: string };
 	}> = [];
 
 	const dayMs = 1000 * 60 * 60 * 24;

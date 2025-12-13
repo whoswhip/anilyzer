@@ -9,15 +9,12 @@ import https from 'https';
 import { createIndexes } from './create_indexes.ts';
 import 'dotenv/config';
 
-const DB_FULL = process.env.DB_FULL === 'true';
-
 const TS_URL = 'https://api.mangabaka.dev/v1/database/series.timestamp.txt';
-const DB_URL = `https://api.mangabaka.dev/v1/database/series${DB_FULL ? '.full' : ''}.sqlite.zst`;
+const DB_URL = `https://api.mangabaka.dev/v1/database/series.sqlite.zst`;
 
 const LOCAL_TS_FILE = 'series.timestamp.local';
-const DB_ZST = DB_FULL ? 'series.full.sqlite.zst' : 'series.sqlite.zst';
-const DB_FILE = DB_FULL ? 'series.full.sqlite' : 'series.sqlite';
-
+const DB_ZST = 'series.sqlite.zst';
+const DB_FILE = 'series.sqlite';
 let server: ChildProcess | null = null;
 
 function fetch(url: string): Promise<string> {
