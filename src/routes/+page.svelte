@@ -644,6 +644,7 @@
 										: `https://anilist.co/manga/${series.series_id}`}
 									target="_blank"
 									rel="noopener noreferrer"
+									referrerpolicy="origin"
 								>
 									{series.data
 										? series.data.title || series.data.romanizedTitle || series.data.nativeTitle

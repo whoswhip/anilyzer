@@ -274,7 +274,7 @@
 										class="hover:text-blue-400"
 										href="https://anilist.co/manga/{manga.sourceAnilistId}"
 										target="_blank"
-										rel="noopener noreferrer"><li class="mt-1">• {manga.title}</li></a
+										rel="noopener noreferrer" referrerpolicy="origin"><li class="mt-1">• {manga.title}</li></a
 									>
 								{/each}
 							</ul>
