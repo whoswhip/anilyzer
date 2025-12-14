@@ -604,7 +604,7 @@
 			ctx.fillText(stat.title, 70, rowTop + 35);
 			ctx.fillStyle = '#dbeafe';
 			ctx.font = 'bold 24px Segoe UI';
-			let valueText = String(stat.value);
+			let valueText = typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value;
 			if (stat.subtitle) {
 				valueText += ` ${stat.subtitle}`;
 			}
