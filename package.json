@@ -1,8 +1,14 @@
 {
 	"name": "anilyzer",
-	"private": true,
-	"version": "0.0.1",
+	"description": "Anilyzer takes GDPR data exports from AniList and analyzes your data to give you insights on your reading/watching habits.",
+	"private": false,
+	"version": "1.0.0",
 	"type": "module",
+	"license": "GPL-3.0-only",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/whoswhip/anilyzer.git"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
