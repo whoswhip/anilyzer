@@ -8,7 +8,7 @@
 	import StatCard from '$lib/components/StatCard.svelte';
 	import ActivityGraph from '$lib/components/ActivityGraph.svelte';
 	import { browser } from '$app/environment';
-	import { getColor, darkenColor } from '$lib/utils';
+	import { getColor, darkenColor, pluralize } from '$lib/utils';
 	import { slide } from 'svelte/transition';
 	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload, ImageDown } from '@lucide/svelte';
 
@@ -174,13 +174,18 @@
 		},
 		{
 			title: 'Estimated Watch Time',
-			subtitle: 'hours',
+			subtitle: pluralize(watchTimeMinutes / 60, 'hour', 'hours'),
 			value: Math.round(watchTimeMinutes / 60),
 			tooltip: 'Estimated total time spent watching anime.'
 		},
 		{
 			title: 'Estimated Reading Time',
-			subtitle: 'hours',
+			subtitle: pluralize(
+				(readingStats.chainedMinutes + readingStats.rangeMinutes + readingStats.remainingMinutes) /
+					60,
+				'hour',
+				'hours'
+			),
 			value: Math.round(
 				(readingStats.chainedMinutes + readingStats.rangeMinutes + readingStats.remainingMinutes) /
 					60
@@ -199,31 +204,35 @@
 		},
 		{
 			title: 'Longest Reading Streak',
-			subtitle: 'days',
+			subtitle: pluralize(streaks.longestStreak.manga, 'day', 'days'),
 			value: streaks.longestStreak.manga,
 			tooltip: 'The longest number of consecutive days you have read manga.'
 		},
 		{
 			title: 'Current Reading Streak',
-			subtitle: 'days',
+			subtitle: pluralize(streaks.currentStreak.manga, 'day', 'days'),
 			value: streaks.currentStreak.manga,
 			tooltip: 'The current number of consecutive days you have read manga.'
 		},
 		{
 			title: 'Longest Watching Streak',
-			subtitle: 'days',
+			subtitle: pluralize(streaks.longestStreak.anime, 'day', 'days'),
 			value: streaks.longestStreak.anime,
 			tooltip: 'The longest number of consecutive days you have watched anime.'
 		},
 		{
 			title: 'Current Watching Streak',
-			subtitle: 'days',
+			subtitle: pluralize(streaks.currentStreak.anime, 'day', 'days'),
 			value: streaks.currentStreak.anime,
 			tooltip: 'The current number of consecutive days you have watched anime.'
 		},
 		{
 			title: 'Longest Overall Streak',
-			subtitle: 'days',
+			subtitle: pluralize(
+				Math.max(streaks.longestStreak.manga, streaks.longestStreak.anime) + 1,
+				'day',
+				'days'
+			),
 			value: Math.max(streaks.longestStreak.manga, streaks.longestStreak.anime) + 1,
 			tooltip: 'The longest number of consecutive days you have engaged with either manga or anime.'
 		},

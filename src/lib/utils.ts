@@ -22,3 +22,6 @@ export function darkenColor(hex: string, factor: number = 0.85): string {
 		b.toString(16).padStart(2, '0')
 	);
 }
+export function pluralize(count: number, singular: string, plural: string): string {
+	return count === 1 ? singular : plural;
+}
