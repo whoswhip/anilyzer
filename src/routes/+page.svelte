@@ -2,6 +2,7 @@
 	import { notify } from '$lib/components/notificationStore';
 	import type { Activity } from '$lib/types/gdpr/activity';
 	import type { List } from '$lib/types/gdpr/list';
+	import type { User } from '$lib/types/gdpr/user';
 	import type { MangabakaSeries } from '$lib/types/series';
 	import { ObjectTypes, StatusNames } from '$lib/types/gdpr/enums';
 	import StatCard from '$lib/components/StatCard.svelte';
@@ -9,7 +10,7 @@
 	import { browser } from '$app/environment';
 	import { getColor, darkenColor } from '$lib/utils';
 	import { slide } from 'svelte/transition';
-	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload } from '@lucide/svelte';
+	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload, ImageDown } from '@lucide/svelte';
 
 	interface StatItem {
 		title: string;
@@ -18,6 +19,7 @@
 		tooltip?: string | null;
 	}
 
+	let fullData: { user: User; activity: Activity[]; lists: List[] } | null = null;
 	let stats: StatItem[] = [];
 	let activities: Activity[] = [];
 	let lists: List[] = [];
@@ -68,6 +70,7 @@
 			processFile(files[0]);
 		}
 	}
+
 	function processFile(file: File) {
 		if (file.type !== 'application/json') {
 			notify({ message: 'Please upload a valid JSON file.', type: 'warning' });
@@ -83,6 +86,7 @@
 					notify({ message: 'Invalid AniList GDPR data file.', type: 'error' });
 					return;
 				}
+				fullData = data;
 				analyzeData(data);
 			} catch (error) {
 				notify({ message: 'Error parsing JSON file.', type: 'error' });
@@ -509,9 +513,81 @@
 				return seriesData.coverX250X1;
 		}
 	}
+
+	function generateStatsImage() {
+		const canvas = document.createElement('canvas');
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+		canvas.width = 800;
+		canvas.height = 990;
+
+		ctx.beginPath();
+		ctx.fillStyle = '#0b1622';
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		ctx.beginPath();
+		ctx.fillStyle = '#151f2e';
+		ctx.strokeStyle = '#253049';
+		ctx.roundRect(30, 30, canvas.width - 60, canvas.height - 60, 10);
+		ctx.fill();
+		ctx.stroke();
+
+		const avatarUrl = fullData?.user?.avatar_url
+			? `https://s4.anilist.co/file/anilistcdn/user/avatar/medium/${fullData?.user?.avatar_url}`
+			: '';
+		const username = fullData?.user?.display_name || 'Unknown User';
+		const avatarImg = new Image();
+		avatarImg.crossOrigin = 'anonymous';
+		avatarImg.src = avatarUrl;
+		avatarImg.onload = () => {
+			ctx.save();
+			ctx.beginPath();
+			ctx.arc(100, 100, 50, 0, Math.PI * 2, true);
+			ctx.closePath();
+			ctx.clip();
+			ctx.drawImage(avatarImg, 50, 50, 100, 100);
+			ctx.restore();
+
+			ctx.fillStyle = '#dbeafe';
+			ctx.font = 'bold 28px Segoe UI';
+			ctx.fillText(username, 170, 110);
+			ctx.fillStyle = '#6b7280';
+			ctx.font = '18px Segoe UI';
+			ctx.fillText(new Date().toLocaleDateString(), 170, 140);
+
+			const imageUrl = canvas.toDataURL('image/png');
+			const link = document.createElement('a');
+			link.href = imageUrl;
+			link.download = 'anilyzer_stats.png';
+			link.click();
+		};
+
+		let rowTop = 175;
+		const rowHeight = 60;
+		stats.forEach((stat) => {
+			ctx.beginPath();
+			ctx.fillStyle = '#1a2332';
+			ctx.strokeStyle = '#253049';
+			ctx.roundRect(50, rowTop, canvas.width - 100, rowHeight, 8);
+			ctx.fill();
+			ctx.stroke();
+			ctx.fillStyle = '#94a3b8';
+			ctx.font = '20px Segoe UI';
+			ctx.fillText(stat.title, 70, rowTop + 35);
+			ctx.fillStyle = '#dbeafe';
+			ctx.font = 'bold 24px Segoe UI';
+			let valueText = String(stat.value);
+			if (stat.subtitle) {
+				valueText += ` ${stat.subtitle}`;
+			}
+			let width = ctx.measureText(valueText).width;
+			ctx.fillText(valueText, canvas.width - 70 - width, rowTop + 35);
+			rowTop += rowHeight + 10;
+		});
+	}
 </script>
 
-<main class="max-w-[1440px] mx-auto p-4 overflow-hidden">
+<main class="max-w-[1440px] p-4 mx-auto overflow-hidden">
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="mt-5 mb-5 text-center">
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -556,7 +632,7 @@
 		</div>
 	</div>
 
-	{#if activities.length > 0 || lists.length > 0}
+	{#if hasActivity}
 		<div class="grid mt-5 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each stats as stat (stat.title)}
 				<StatCard
@@ -732,4 +808,12 @@
 	>
 		<GithubIcon size="32" />
 	</a>
+	<button
+		class="p-2 fixed bottom-34 right-6 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-100 rounded-full shadow-lg transition-colors duration-300 cursor-pointer
+		{!hasActivity ? 'opacity-50 pointer-events-none' : ''}"
+		on:click={generateStatsImage}
+		aria-label="Download Stats Image"
+	>
+		<ImageDown size="32" />
+	</button>
 </main>
