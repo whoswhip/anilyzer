@@ -51,7 +51,8 @@
 							? 'left-1/2 -translate-x-1/2'
 							: 'right-0'}"
 				>
-					{tooltip}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html tooltip}
 				</div>
 			</div>
 		{/if}

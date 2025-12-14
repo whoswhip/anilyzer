@@ -44,7 +44,12 @@
 	let totalChaptersRead: number = 0;
 	let totalEpisodesWatched: number = 0;
 	let watchTimeMinutes: number = 0;
-	let readingStats = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
+	let readingStats = {
+		chainedMinutes: 0,
+		rangeMinutes: 0,
+		averageMinutesPerChapter: 0,
+		remainingMinutes: 0
+	};
 	let history: Record<number, Activity[]> = {};
 	let dayEntries: Array<{
 		date: number;
@@ -122,7 +127,8 @@
 	$: watchTimeMinutes = totalEpisodesWatched * 24;
 
 	$: readingStats = calculateReadingTime(
-		activities.filter((act) => act.object_type === ObjectTypes.Manga + 1)
+		activities.filter((act) => act.object_type === ObjectTypes.Manga + 1),
+		mangaLists
 	);
 
 	$: history = buildHistory(activities);
@@ -175,8 +181,15 @@
 		{
 			title: 'Estimated Reading Time',
 			subtitle: 'hours',
-			value: Math.round((readingStats.chainedMinutes + readingStats.rangeMinutes) / 60),
-			tooltip: 'Estimated total time spent reading manga.'
+			value: Math.round(
+				(readingStats.chainedMinutes + readingStats.rangeMinutes + readingStats.remainingMinutes) /
+					60
+			),
+			tooltip: `Estimated total time spent reading manga. <br> Chained: ${Math.round(
+				readingStats.chainedMinutes / 60
+			)} hrs, Range: ${Math.round(readingStats.rangeMinutes / 60)} hrs, Remaining: ${Math.round(
+				readingStats.remainingMinutes / 60
+			)} hrs.`
 		},
 		{
 			title: 'Average Reading Speed',
@@ -240,8 +253,13 @@
 			return bProgress - aProgress;
 		});
 
-	function calculateReadingTime(readingActivities: Activity[]) {
-		const emptyTotals = { chainedMinutes: 0, rangeMinutes: 0, averageMinutesPerChapter: 0 };
+	function calculateReadingTime(readingActivities: Activity[], mangaLists: List[]) {
+		const emptyTotals = {
+			chainedMinutes: 0,
+			rangeMinutes: 0,
+			averageMinutesPerChapter: 0,
+			remainingMinutes: 0
+		};
 		if (readingActivities.length === 0) return emptyTotals;
 
 		const sorted = [...readingActivities].sort(
@@ -271,6 +289,14 @@
 			}
 		}
 
+		const remainingChapters =
+			mangaLists.reduce((sum, list) => {
+				const readChapters = includeRepeats
+					? list.progress + list.repeat * list.progress
+					: list.progress;
+				return sum + readChapters;
+			}, 0) - rangeActivities.reduce((sum, entry) => sum + entry.progress, 0);
+
 		for (const activities of Object.values(seriesGroups)) {
 			for (let i = 1; i < activities.length; i++) {
 				const prevTime = Date.parse(activities[i - 1].created_at);
@@ -284,16 +310,18 @@
 		}
 
 		const averageMinutesPerChapter =
-			chainedReadingTimes.length > 0
+			chainedReadingTimes.length > 1
 				? chainedReadingTimes.reduce((sum, val) => sum + val, 0) / chainedReadingTimes.length
 				: fallbackAverageReadingTime;
 		const rangeMinutes = rangeActivities.reduce((sum, entry) => {
 			return sum + entry.progress * averageMinutesPerChapter;
 		}, 0);
+		const remainingMinutes = remainingChapters * averageMinutesPerChapter;
 		return {
 			chainedMinutes: chainedReadingTimes.reduce((sum, val) => sum + val, 0),
 			rangeMinutes,
-			averageMinutesPerChapter
+			averageMinutesPerChapter,
+			remainingMinutes
 		};
 	}
 
