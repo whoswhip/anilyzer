@@ -1,19 +1,20 @@
 /*
-    THIS IS EXPERIMENTAL AND LINUX ONLY
+    THIS IS EXPERIMENTAl
     start: npx ts-node ./scripts/start.ts
 */
 
-import { execSync, spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import { createIndexes } from './create_indexes.ts';
+import { x as extract } from 'tar';
 import 'dotenv/config';
 
+const DB_ARCHIVE = 'series.sqlite.tar.gz';
 const TS_URL = 'https://api.mangabaka.dev/v1/database/series.timestamp.txt';
-const DB_URL = `https://api.mangabaka.dev/v1/database/series.sqlite.zst`;
+const DB_URL = `https://api.mangabaka.dev/v1/database/${DB_ARCHIVE}`;
 
 const LOCAL_TS_FILE = 'series.timestamp.local';
-const DB_ZST = 'series.sqlite.zst';
 const DB_FILE = 'series.sqlite';
 let server: ChildProcess | null = null;
 
@@ -51,9 +52,9 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 
 async function updateDatabase(logMessage: string, remoteTS: string): Promise<boolean> {
 	console.log(logMessage);
-	await downloadFile(DB_URL, DB_ZST);
-	execSync(`unzstd -f ${DB_ZST}`);
-	fs.unlinkSync(DB_ZST);
+	await downloadFile(DB_URL, DB_ARCHIVE);
+	await extract({ file: DB_ARCHIVE, cwd: '.' });
+	fs.unlinkSync(DB_ARCHIVE);
 	fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
 	createIndexes();
 	console.log('Database updated.');

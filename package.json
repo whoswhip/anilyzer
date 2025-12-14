@@ -49,6 +49,7 @@
 	"dependencies": {
 		"@lucide/svelte": "^0.560.0",
 		"better-sqlite3": "^12.4.1",
-		"dotenv": "^17.2.3"
+		"dotenv": "^17.2.3",
+		"tar": "^7.5.2"
 	}
 }
