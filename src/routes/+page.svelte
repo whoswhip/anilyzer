@@ -599,9 +599,10 @@
 			ctx.roundRect(50, rowTop, canvas.width - 100, rowHeight, 8);
 			ctx.fill();
 			ctx.stroke();
+			ctx.textBaseline = 'middle';
 			ctx.fillStyle = '#94a3b8';
 			ctx.font = '20px Segoe UI';
-			ctx.fillText(stat.title, 70, rowTop + 35);
+			ctx.fillText(stat.title, 70, rowTop + rowHeight / 2);
 			ctx.fillStyle = '#dbeafe';
 			ctx.font = 'bold 24px Segoe UI';
 			let valueText = typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value;
@@ -609,7 +610,8 @@
 				valueText += ` ${stat.subtitle}`;
 			}
 			let width = ctx.measureText(valueText).width;
-			ctx.fillText(valueText, canvas.width - 70 - width, rowTop + 35);
+			ctx.fillText(valueText, canvas.width - 70 - width, rowTop + rowHeight / 2);
+			ctx.textBaseline = 'alphabetic';
 			rowTop += rowHeight + 10;
 		});
 	}
