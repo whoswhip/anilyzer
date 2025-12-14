@@ -556,7 +556,7 @@
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 		canvas.width = 800;
-		canvas.height = 990;
+		canvas.height = 200 + stats.length * 70 + 20;
 
 		ctx.beginPath();
 		ctx.fillStyle = '#0b1622';
