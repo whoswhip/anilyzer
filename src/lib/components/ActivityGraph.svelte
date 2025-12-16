@@ -29,7 +29,10 @@
 
 	const dayMs = 1000 * 60 * 60 * 24;
 
-	const toKey = (value: number) => new Date(value).toISOString().slice(0, 10);
+	const toKey = (value: number) => {
+		const date = new Date(value);
+		return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+	};
 	const groupSum = (group?: Record<string, number | string>) => {
 		if (!group) return 0;
 		let total = 0;
@@ -78,9 +81,10 @@
 	}
 
 	let today = new Date();
-	let endDate = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-	let endDay = new Date(endDate).getUTCDay();
-	let defaultStart = endDate - (52 * 7 + endDay) * dayMs;
+	let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	endDate.setHours(0, 0, 0, 0);
+	let endDay = endDate.getDay();
+	let defaultStart = endDate.getTime() - (52 * 7 + endDay) * dayMs;
 	let startDate = defaultStart;
 
 	let calendarDays: Array<{ timestamp: number; total: number }> = [];
@@ -90,7 +94,7 @@
 
 	$: {
 		calendarDays = [];
-		for (let current = startDate; current <= endDate; current += dayMs) {
+		for (let current = startDate; current <= endDate.getTime(); current += dayMs) {
 			const key = toKey(current);
 			const total = entryTotals.get(key) ?? 0;
 			calendarDays.push({ timestamp: current, total });
@@ -197,7 +201,10 @@
 		tooltip = { ...tooltip, frozen: false };
 	};
 
-	const formatDate = (timestamp: number) => new Date(timestamp).toISOString().slice(0, 10);
+	const formatDate = (timestamp: number) => {
+		const date = new Date(timestamp);
+		return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+	};
 </script>
 
 <div class="bg-slate-850 border border-slate-775 rounded-lg p-5 mt-10">

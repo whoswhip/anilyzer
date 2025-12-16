@@ -68,6 +68,10 @@
 		currentStreak: { manga: 0, anime: 0 }
 	};
 
+	type MangaEntry = List & { totalProgress: number; data?: MangabakaSeries };
+	let mangaEntries: MangaEntry[] = [];
+	let seriesByAnilistId: Record<number, MangabakaSeries> = {};
+
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
 		const files = event.dataTransfer?.files;
@@ -105,18 +109,34 @@
 		const activityData: Activity[] = data.activity;
 		activities = activityData;
 		lists = data.lists;
-		const manga = lists.filter((list) => list.series_type === ObjectTypes.Manga);
-		fetchMangaSeriesData(manga);
+		fetchMangaSeriesData(
+			lists
+				.filter((list) => list.series_type === ObjectTypes.Manga)
+				.map((list) => list.series_id)
+		);
 	}
 
-	$: mangaLists = lists.filter((list) => list.series_type === ObjectTypes.Manga);
 	$: animeLists = lists.filter((list) => list.series_type === ObjectTypes.Anime);
 
-	$: totalChaptersRead = mangaLists.reduce(
-		(sum, item) =>
-			sum + (includeRepeats ? item.progress + item.repeat * item.progress : item.progress),
-		0
+	$: seriesByAnilistId = series.reduce(
+		(acc, item) => {
+			const key = Number(item.sourceAnilistId);
+			if (Number.isFinite(key)) acc[key] = item;
+			return acc;
+		},
+		{} as Record<number, MangabakaSeries>
 	);
+
+	$: mangaEntries = lists
+		.filter((list) => list.series_type === ObjectTypes.Manga)
+		.map((list) => {
+		const totalProgress = includeRepeats
+			? list.progress + list.repeat * list.progress
+			: list.progress;
+		return { ...list, totalProgress, data: seriesByAnilistId[list.series_id] };
+	});
+
+	$: totalChaptersRead = mangaEntries.reduce((sum, item) => sum + item.totalProgress, 0);
 
 	$: totalEpisodesWatched = animeLists.reduce(
 		(sum, item) =>
@@ -128,7 +148,7 @@
 
 	$: readingStats = calculateReadingTime(
 		activities.filter((act) => act.object_type === ObjectTypes.Manga + 1),
-		mangaLists
+		mangaEntries
 	);
 
 	$: history = buildHistory(activities);
@@ -154,7 +174,7 @@
 
 	$: activitiesByHour = Array.from({ length: 24 }, (_, hour) => {
 		const activitiesByHour = activities.filter(
-			(activity) => new Date(activity.created_at).getUTCHours() === hour
+			(activity) => new Date(activity.created_at).getHours() === hour
 		);
 		return { hour, activities: activitiesByHour, count: activitiesByHour.length };
 	});
@@ -246,23 +266,9 @@
 		}
 	];
 
-	$: mostReadSeries = lists
-		.filter((list) => list.series_type === ObjectTypes.Manga)
-		.map((list) => {
-			const seriesData = series.find((s) => Number(s.sourceAnilistId) === list.series_id);
-			return {
-				...list,
-				progress: includeRepeats ? list.progress + list.repeat * list.progress : list.progress,
-				data: seriesData
-			};
-		})
-		.sort((a, b) => {
-			const aProgress = includeRepeats ? a.progress + a.repeat * a.progress : a.progress;
-			const bProgress = includeRepeats ? b.progress + b.repeat * b.progress : b.progress;
-			return bProgress - aProgress;
-		});
+	$: mostReadSeries = [...mangaEntries].sort((a, b) => b.totalProgress - a.totalProgress);
 
-	function calculateReadingTime(readingActivities: Activity[], mangaLists: List[]) {
+	function calculateReadingTime(readingActivities: Activity[], mangaEntries: MangaEntry[]) {
 		const emptyTotals = {
 			chainedMinutes: 0,
 			rangeMinutes: 0,
@@ -299,12 +305,8 @@
 		}
 
 		const remainingChapters =
-			mangaLists.reduce((sum, list) => {
-				const readChapters = includeRepeats
-					? list.progress + list.repeat * list.progress
-					: list.progress;
-				return sum + readChapters;
-			}, 0) - rangeActivities.reduce((sum, entry) => sum + entry.progress, 0);
+			mangaEntries.reduce((sum, entry) => sum + entry.totalProgress, 0) -
+			rangeActivities.reduce((sum, entry) => sum + entry.progress, 0);
 
 		for (const activities of Object.values(seriesGroups)) {
 			for (let i = 1; i < activities.length; i++) {
@@ -393,7 +395,7 @@
 		if (timestamp === null || timestamp === undefined) return NaN;
 		const date = new Date(Number(timestamp));
 		if (Number.isNaN(date.getTime())) return NaN;
-		return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+		return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 	}
 
 	function buildDayEntries(activities: Activity[]) {
@@ -440,7 +442,7 @@
 		const history: Record<number, Activity[]> = {};
 		for (const activity of activities) {
 			const date = new Date(activity.created_at);
-			const dateKey = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+			const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 			if (!history[dateKey]) history[dateKey] = [];
 			history[dateKey].push(activity);
 		}
@@ -505,11 +507,7 @@
 		return { longestStreak, currentStreak };
 	}
 
-	function fetchMangaSeriesData(lists: List[]) {
-		const mangaIds = lists
-			.filter((list) => list.series_type === ObjectTypes.Manga)
-			.map((list) => list.series_id);
-
+	function fetchMangaSeriesData(mangaIds: number[]) {
 		if (mangaIds.length === 0) return;
 
 		const chunkSize = 50;
@@ -535,7 +533,7 @@
 	}
 
 	function getCoverURL(seriesId: number, quality: 'small' | 'medium' | 'large' | 'raw' = 'medium') {
-		const seriesData = series.find((s) => Number(s.sourceAnilistId) === seriesId);
+		const seriesData = seriesByAnilistId[seriesId];
 		if (!seriesData) return '';
 		switch (quality) {
 			case 'small':
@@ -765,7 +763,7 @@
 										? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
 										: 'Unknown Title'}
 								</a>
-								<p class="text-slate-400">Chapters Read: {series.progress}</p>
+									<p class="text-slate-400">Chapters Read: {series.totalProgress}</p>
 								<p class="text-slate-400">Status: {StatusNames[series.status]}</p>
 								<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>
 								<div class="mt-2 text-sm text-slate-500">
