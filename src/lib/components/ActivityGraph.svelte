@@ -2,7 +2,7 @@
 	import type { MangabakaSeries } from '$lib/types/series';
 	import { colors } from '$lib/constants';
 	import { getColor } from '$lib/utils';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteDate, SvelteMap } from 'svelte/reactivity';
 
 	type ActivityEntry = {
 		date: number | string;
@@ -31,7 +31,13 @@
 
 	const toKey = (value: number) => {
 		const date = new Date(value);
-		return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+		return (
+			date.getFullYear() +
+			'-' +
+			String(date.getMonth() + 1).padStart(2, '0') +
+			'-' +
+			String(date.getDate()).padStart(2, '0')
+		);
 	};
 	const groupSum = (group?: Record<string, number | string>) => {
 		if (!group) return 0;
@@ -81,7 +87,7 @@
 	}
 
 	let today = new Date();
-	let endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+	let endDate = new SvelteDate(today.getFullYear(), today.getMonth(), today.getDate());
 	endDate.setHours(0, 0, 0, 0);
 	let endDay = endDate.getDay();
 	let defaultStart = endDate.getTime() - (52 * 7 + endDay) * dayMs;
@@ -203,7 +209,13 @@
 
 	const formatDate = (timestamp: number) => {
 		const date = new Date(timestamp);
-		return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+		return (
+			date.getFullYear() +
+			'-' +
+			String(date.getMonth() + 1).padStart(2, '0') +
+			'-' +
+			String(date.getDate()).padStart(2, '0')
+		);
 	};
 </script>
 

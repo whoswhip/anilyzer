@@ -57,7 +57,6 @@
 		anime: Record<string, number>;
 		manga: Record<string, number>;
 	}> = [];
-	let mostActiveDay = { date: '', chapters: 0, unit: 'chapters' };
 	type Streaks = {
 		longestStreak: { manga: number; anime: number };
 		currentStreak: { manga: number; anime: number };
@@ -110,9 +109,7 @@
 		activities = activityData;
 		lists = data.lists;
 		fetchMangaSeriesData(
-			lists
-				.filter((list) => list.series_type === ObjectTypes.Manga)
-				.map((list) => list.series_id)
+			lists.filter((list) => list.series_type === ObjectTypes.Manga).map((list) => list.series_id)
 		);
 	}
 
@@ -130,11 +127,11 @@
 	$: mangaEntries = lists
 		.filter((list) => list.series_type === ObjectTypes.Manga)
 		.map((list) => {
-		const totalProgress = includeRepeats
-			? list.progress + list.repeat * list.progress
-			: list.progress;
-		return { ...list, totalProgress, data: seriesByAnilistId[list.series_id] };
-	});
+			const totalProgress = includeRepeats
+				? list.progress + list.repeat * list.progress
+				: list.progress;
+			return { ...list, totalProgress, data: seriesByAnilistId[list.series_id] };
+		});
 
 	$: totalChaptersRead = mangaEntries.reduce((sum, item) => sum + item.totalProgress, 0);
 
@@ -155,9 +152,41 @@
 
 	$: dayEntries = buildDayEntries(activities);
 
-	$: mostActiveDay = (function () {
+	$: mostActiveReadingDay = (function () {
 		if (!Array.isArray(dayEntries) || dayEntries.length === 0)
-			return { date: '', chapters: 0, unit: 'chapters' };
+			return { date: '', value: 0, unit: 'chapters' };
+		const top = dayEntries.reduce(
+			(max, d) => {
+				const mangaTotal = Object.values(d.manga || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+				if (mangaTotal > max.total) {
+					return { date: new Date(d.date).toISOString(), total: mangaTotal, unit: 'chapters' };
+				}
+				return max;
+			},
+			{ date: '', total: 0, unit: 'chapters' }
+		);
+		return { date: top.date, value: top.total, unit: top.unit };
+	})();
+
+	$: mostActiveWatchingDay = (function () {
+		if (!Array.isArray(dayEntries) || dayEntries.length === 0)
+			return { date: '', value: 0, unit: 'episodes' };
+		const top = dayEntries.reduce(
+			(max, d) => {
+				const animeTotal = Object.values(d.anime || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+				if (animeTotal > max.total) {
+					return { date: new Date(d.date).toISOString(), total: animeTotal, unit: 'episodes' };
+				}
+				return max;
+			},
+			{ date: '', total: 0, unit: 'episodes' }
+		);
+		return { date: top.date, value: top.total, unit: top.unit };
+	})();
+
+	$: mostActiveDayTotal = (function () {
+		if (!Array.isArray(dayEntries) || dayEntries.length === 0)
+			return { date: '', value: 0, unit: 'items' };
 		const top = dayEntries.reduce(
 			(max, d) => {
 				if (d.total > max.total) {
@@ -167,9 +196,9 @@
 				}
 				return max;
 			},
-			{ date: '', total: 0, unit: 'chapters' }
+			{ date: '', total: 0, unit: 'items' }
 		);
-		return { date: top.date, chapters: top.total, unit: top.unit };
+		return { date: top.date, value: top.total, unit: top.unit };
 	})();
 
 	$: activitiesByHour = Array.from({ length: 24 }, (_, hour) => {
@@ -258,10 +287,30 @@
 		},
 		{
 			title: 'Most Active Reading Day',
-			subtitle: mostActiveDay.date ? `On ${mostActiveDay.date.split('T')[0]}` : 'On —',
-			value: `${mostActiveDay.chapters} ${mostActiveDay.unit}`,
-			tooltip: mostActiveDay.date
-				? `On ${new Date(mostActiveDay.date).toLocaleDateString()}, you read ${mostActiveDay.chapters} ${mostActiveDay.unit}.`
+			subtitle: mostActiveReadingDay.date
+				? `On ${mostActiveReadingDay.date.split('T')[0]}`
+				: 'On —',
+			value: `${mostActiveReadingDay.value} ${mostActiveReadingDay.unit}`,
+			tooltip: mostActiveReadingDay.date
+				? `On ${new Date(mostActiveReadingDay.date).toLocaleDateString()}, you read ${mostActiveReadingDay.value} ${mostActiveReadingDay.unit}.`
+				: 'No activity data.'
+		},
+		{
+			title: 'Most Active Watching Day',
+			subtitle: mostActiveWatchingDay.date
+				? `On ${mostActiveWatchingDay.date.split('T')[0]}`
+				: 'On —',
+			value: `${mostActiveWatchingDay.value} ${mostActiveWatchingDay.unit}`,
+			tooltip: mostActiveWatchingDay.date
+				? `On ${new Date(mostActiveWatchingDay.date).toLocaleDateString()}, you watched ${mostActiveWatchingDay.value} ${mostActiveWatchingDay.unit}.`
+				: 'No activity data.'
+		},
+		{
+			title: 'Most Active Day Overall',
+			subtitle: mostActiveDayTotal.date ? `On ${mostActiveDayTotal.date.split('T')[0]}` : 'On —',
+			value: `${mostActiveDayTotal.value} ${mostActiveDayTotal.unit}`,
+			tooltip: mostActiveDayTotal.date
+				? `On ${new Date(mostActiveDayTotal.date).toLocaleDateString()}, you had ${mostActiveDayTotal.value} total ${mostActiveDayTotal.unit}.`
 				: 'No activity data.'
 		}
 	];
@@ -763,7 +812,7 @@
 										? series.data.title || series.data.romanizedTitle || series.data.nativeTitle
 										: 'Unknown Title'}
 								</a>
-									<p class="text-slate-400">Chapters Read: {series.totalProgress}</p>
+								<p class="text-slate-400">Chapters Read: {series.totalProgress}</p>
 								<p class="text-slate-400">Status: {StatusNames[series.status]}</p>
 								<p class="text-slate-400">Score: {series.score === 0 ? 'N/A' : series.score}</p>
 								<div class="mt-2 text-sm text-slate-500">
