@@ -24,22 +24,35 @@
 	let activities: Activity[] = [];
 	let lists: List[] = [];
 	let series: MangabakaSeries[] = [];
-	let includeRepeats = browser && localStorage.getItem('includeRepeats') !== 'false';
-	let fullClock = browser && localStorage.getItem('fullClock') !== 'false';
-	let fallbackAverageReadingTime =
-		browser && localStorage.getItem('fallbackAverageReadingTime')
-			? parseFloat(localStorage.getItem('fallbackAverageReadingTime') || '5')
-			: 5;
-	let hasActivity = false;
+
+	let userSettings = {
+		includeRepeats: true,
+		fullClock: true,
+		fallbackAverageReadingTime: 5,
+		assumeRepeatsAsTotalChapters: true
+	};
+
+	if (browser) {
+		const stored = localStorage.getItem('UserSettings');
+		if (stored) {
+			try {
+				const parsed = JSON.parse(stored);
+				userSettings = { ...userSettings, ...parsed };
+			} catch {
+				notify({ message: 'Error parsing stored user settings.', type: 'error' });
+			}
+		}
+	}
+
 	let mostReadSeriesFolded = false;
+	let settingsOpen: boolean = false;
+
+	let hasActivity = false;
 	$: hasActivity = activities.length > 0 || lists.length > 0;
 
 	$: if (browser) {
-		localStorage.setItem('includeRepeats', String(includeRepeats));
-		localStorage.setItem('fullClock', String(fullClock));
-		localStorage.setItem('fallbackAverageReadingTime', String(fallbackAverageReadingTime));
+		localStorage.setItem('UserSettings', JSON.stringify(userSettings));
 	}
-	let settingsOpen: boolean = false;
 
 	let totalChaptersRead: number = 0;
 	let totalEpisodesWatched: number = 0;
@@ -127,17 +140,23 @@
 	$: mangaEntries = lists
 		.filter((list) => list.series_type === ObjectTypes.Manga)
 		.map((list) => {
-			const totalProgress = includeRepeats
-				? list.progress + list.repeat * list.progress
+			const series = seriesByAnilistId[list.series_id];
+			const totalProgress = userSettings.includeRepeats
+				? list.progress +
+					list.repeat *
+						(series?.status === 'completed' && userSettings.assumeRepeatsAsTotalChapters
+							? Number(series?.totalChapters)
+							: list.progress)
 				: list.progress;
-			return { ...list, totalProgress, data: seriesByAnilistId[list.series_id] };
+			return { ...list, totalProgress, data: series };
 		});
 
 	$: totalChaptersRead = mangaEntries.reduce((sum, item) => sum + item.totalProgress, 0);
 
 	$: totalEpisodesWatched = animeLists.reduce(
 		(sum, item) =>
-			sum + (includeRepeats ? item.progress + item.repeat * item.progress : item.progress),
+			sum +
+			(userSettings.includeRepeats ? item.progress + item.repeat * item.progress : item.progress),
 		0
 	);
 
@@ -219,7 +238,7 @@
 		{
 			title: 'Total Chapters Read',
 			value: totalChaptersRead,
-			tooltip: `Total number of manga chapters you have read${includeRepeats ? ' (including repeats)' : ''}.`
+			tooltip: `Total number of manga chapters you have read${userSettings.includeRepeats ? ' (including repeats)' : ''}.`
 		},
 		{
 			title: 'Estimated Watch Time',
@@ -372,7 +391,7 @@
 		const averageMinutesPerChapter =
 			chainedReadingTimes.length > 1
 				? chainedReadingTimes.reduce((sum, val) => sum + val, 0) / chainedReadingTimes.length
-				: fallbackAverageReadingTime;
+				: userSettings.fallbackAverageReadingTime;
 		const rangeMinutes = rangeActivities.reduce((sum, entry) => {
 			return sum + entry.progress * averageMinutesPerChapter;
 		}, 0);
@@ -556,7 +575,7 @@
 		return { longestStreak, currentStreak };
 	}
 
-	function fetchMangaSeriesData(mangaIds: number[]) {
+	async function fetchMangaSeriesData(mangaIds: number[]) {
 		if (mangaIds.length === 0) return;
 
 		const chunkSize = 50;
@@ -568,15 +587,30 @@
 			const chunk = mangaIds.slice(i, i + chunkSize);
 			const chunkIndex = Math.floor(i / chunkSize);
 
-			setTimeout(() => {
+			setTimeout(async () => {
+				const cacheKey = `mangabaka_anilist_${chunk.join(',')}`;
+				if ('caches' in window) {
+					const cache = await caches.open('mangabaka-anilist');
+					const cachedResp = await cache.match(cacheKey);
+					if (cachedResp) {
+						const json = await cachedResp.json();
+						if (Date.now() - json.timestamp < 6 * 60 * 60 * 1000) {
+							series = [...series, ...json.data];
+							return;
+						}
+					}
+				}
 				fetch(`/api/mangabaka/anilist?ids=${chunk.join(',')}`)
 					.then((res) => res.json())
-					.then((data: { count: number; data: MangabakaSeries[] }) => {
+					.then(async (data: { count: number; data: MangabakaSeries[] }) => {
 						series = [...series, ...data.data];
+						if ('caches' in window) {
+							const cache = await caches.open('mangabaka-anilist');
+							const resp = new Response(JSON.stringify({ timestamp: Date.now(), data: data.data }));
+							await cache.put(cacheKey, resp);
+						}
 					})
-					.catch((error) => {
-						console.error('Error fetching Mangabaka series data:', error);
-					});
+					.catch(() => {});
 			}, chunkIndex * delay);
 		}
 	}
@@ -746,7 +780,7 @@
 						style="background-color: {getColor(hourData.count, maxCount)}"
 					>
 						<span class="text-shadow-black text-shadow-sm">
-							{fullClock
+							{userSettings.fullClock
 								? hourData.hour.toString().padStart(2, '0') + ':00'
 								: (hourData.hour % 12 || 12) + (hourData.hour < 12 ? ' AM' : ' PM')}
 						</span>
@@ -834,9 +868,18 @@
 	{#if settingsOpen}
 		<div
 			class="fixed w-full h-screen backdrop-blur-sm top-0 left-0 flex items-center justify-center z-50"
+			role="dialog"
+			tabindex="0"
+			on:click={() => (settingsOpen = false)}
+			on:keydown={(e) => {
+				if (e.key === 'Escape') settingsOpen = false;
+			}}
 		>
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				class="max-w-[1400px] w-full m-4 bg-slate-850 border border-slate-775 rounded-lg p-6 relative"
+				on:click|capture={(e) => e.stopPropagation()}
 			>
 				<h2 class="text-2xl font-semibold mb-4 text-blue-100">Settings</h2>
 				<div class="space-y-4">
@@ -844,7 +887,7 @@
 						<input
 							type="checkbox"
 							id="includeRepeatsSettings"
-							bind:checked={includeRepeats}
+							bind:checked={userSettings.includeRepeats}
 							class="mr-2"
 						/>
 						<label for="includeRepeatsSettings" class="text-slate-400"
@@ -852,9 +895,25 @@
 						>
 					</div>
 					<div class="flex items-center">
-						<input type="checkbox" id="fullClockSettings" bind:checked={fullClock} class="mr-2" />
+						<input
+							type="checkbox"
+							id="fullClockSettings"
+							bind:checked={userSettings.fullClock}
+							class="mr-2"
+						/>
 						<label for="fullClockSettings" class="text-slate-400"
 							>Display time in 24-hour format</label
+						>
+					</div>
+					<div class="flex items-center">
+						<input
+							type="checkbox"
+							id="assumeRepeatsAsTotalChapters"
+							bind:checked={userSettings.assumeRepeatsAsTotalChapters}
+							class="mr-2"
+						/>
+						<label for="assumeRepeatsAsTotalChapters" class="text-slate-400 mr-2"
+							>Assume repeats as the series total chapters in calculations</label
 						>
 					</div>
 					<div class="flex items-center">
@@ -864,7 +923,7 @@
 						<input
 							type="number"
 							id="fallbackAverageReadingTime"
-							bind:value={fallbackAverageReadingTime}
+							bind:value={userSettings.fallbackAverageReadingTime}
 							min="1"
 							class="w-20 p-1 rounded border border-slate-700 bg-slate-800 text-blue-100"
 						/>
