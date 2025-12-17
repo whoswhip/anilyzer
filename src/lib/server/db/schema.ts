@@ -117,5 +117,5 @@ export const series = sqliteTable(
 		secondaryTitlesDe: t.text('secondary_titles_de'),
 		secondaryTitlesRu: t.text('secondary_titles_ru')
 	}),
-	(table) => [index('source_anilist_id_idx').on(table.sourceAnilistId)]
+	(table) => [index('active_source_anilist_id_idx').on(table.sourceAnilistId, table.state)]
 );

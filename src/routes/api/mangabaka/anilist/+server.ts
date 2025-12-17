@@ -1,7 +1,7 @@
 import { json, error, type RequestEvent } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { series } from '$lib/server/db/schema';
-import { inArray } from 'drizzle-orm';
+import { inArray, eq, and } from 'drizzle-orm';
 import { rateLimiter } from '$lib/server/rate-limiter';
 import { seriesCache } from '$lib/server/cache';
 import type { MangabakaSeries } from '$lib/types/series';
@@ -53,7 +53,9 @@ export async function GET({ url }: RequestEvent) {
 			dbResults = (await db
 				.select()
 				.from(series)
-				.where(inArray(series.sourceAnilistId, uncachedIds))) as unknown as MangabakaSeries[];
+				.where(
+					and(inArray(series.sourceAnilistId, uncachedIds), eq(series.state, 'active'))
+				)) as unknown as MangabakaSeries[];
 
 			for (const result of dbResults) {
 				if (result.sourceAnilistId) {

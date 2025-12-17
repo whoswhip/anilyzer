@@ -13,7 +13,9 @@ export function createIndexes() {
 
 	try {
 		const db = drizzle(new Database(dbPath));
-		db.run(`CREATE INDEX IF NOT EXISTS source_anilist_id_idx ON series (source_anilist_id);`);
+		db.run(
+			`CREATE INDEX IF NOT EXISTS active_source_anilist_id_idx ON series(source_anilist_id, state);`
+		);
 		console.log('Index created: source_anilist_id_idx');
 	} catch (error) {
 		console.error('Failed to create index:', error);
