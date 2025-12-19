@@ -29,7 +29,8 @@
 		includeRepeats: true,
 		fullClock: true,
 		fallbackAverageReadingTime: 5,
-		assumeRepeatsAsTotalChapters: true
+		assumeRepeatsAsTotalChapters: true,
+		drawBannerInStatsImage: true
 	};
 
 	if (browser) {
@@ -268,7 +269,8 @@
 			title: 'Average Reading Speed',
 			subtitle: 'minutes/chapter',
 			value: readingStats.averageMinutesPerChapter.toFixed(2),
-			tooltip: 'Your average time spent reading each manga chapter.'
+			tooltip: `Your average time spent reading each manga chapter. 
+			<br> The theoretical max amount of chapters you could read in one day is ${Math.round(60 / readingStats.averageMinutesPerChapter) * 24} chapters.`
 		},
 		{
 			title: 'Longest Reading Streak',
@@ -650,35 +652,75 @@
 		ctx.fill();
 		ctx.stroke();
 
+		let imagesLoaded = 0;
 		const avatarUrl = fullData?.user?.avatar_url
 			? `https://s4.anilist.co/file/anilistcdn/user/avatar/medium/${fullData?.user?.avatar_url}`
 			: '';
+		const bannerUrl = fullData?.user?.banner_url
+			? `https://s4.anilist.co/file/anilistcdn/user/banner/${fullData?.user?.banner_url}`
+			: '';
 		const username = fullData?.user?.display_name || 'Unknown User';
-		const avatarImg = new Image();
-		avatarImg.crossOrigin = 'anonymous';
-		avatarImg.src = avatarUrl;
-		avatarImg.onload = () => {
-			ctx.save();
-			ctx.beginPath();
-			ctx.arc(100, 100, 50, 0, Math.PI * 2, true);
-			ctx.closePath();
-			ctx.clip();
-			ctx.drawImage(avatarImg, 50, 50, 100, 100);
-			ctx.restore();
 
-			ctx.fillStyle = '#dbeafe';
-			ctx.font = 'bold 28px Segoe UI';
-			ctx.fillText(username, 170, 110);
-			ctx.fillStyle = '#6b7280';
-			ctx.font = '18px Segoe UI';
-			ctx.fillText(new Date().toLocaleDateString(), 170, 140);
+		if (bannerUrl !== '' && userSettings.drawBannerInStatsImage) {
+			const bannerImg = new Image();
+			bannerImg.crossOrigin = 'anonymous';
+			bannerImg.src = bannerUrl;
+			bannerImg.onload = () => {
+				ctx.save();
+				ctx.beginPath();
+				ctx.roundRect(30, 30, canvas.width - 60, 130, 10);
+				ctx.closePath();
+				ctx.clip();
 
-			const imageUrl = canvas.toDataURL('image/png');
-			const link = document.createElement('a');
-			link.href = imageUrl;
-			link.download = 'anilyzer_stats.png';
-			link.click();
-		};
+				const bannerCanvas = document.createElement('canvas');
+				const bannerCtx = bannerCanvas.getContext('2d');
+				if (bannerCtx) {
+					bannerCanvas.width = canvas.width - 60;
+					bannerCanvas.height = 130;
+					const aspectRatio = bannerImg.width / bannerImg.height;
+					let drawWidth = bannerCanvas.width;
+					let drawHeight = bannerCanvas.height;
+					if (drawWidth / drawHeight > aspectRatio) {
+						drawHeight = drawWidth / aspectRatio;
+					} else {
+						drawWidth = drawHeight * aspectRatio;
+					}
+					const offsetX = (bannerCanvas.width - drawWidth) / 2;
+					const offsetY = (bannerCanvas.height - drawHeight) / 2;
+
+					bannerCtx.filter = 'blur(4px) brightness(0.6)';
+					bannerCtx.drawImage(bannerImg, offsetX, offsetY, drawWidth, drawHeight);
+					ctx.drawImage(bannerCanvas, 30, 30);
+				}
+
+				ctx.restore();
+
+				imagesLoaded += 1;
+			};
+		}
+
+		if (avatarUrl !== '') {
+			const avatarImg = new Image();
+			avatarImg.crossOrigin = 'anonymous';
+			avatarImg.src = avatarUrl;
+			avatarImg.onload = () => {
+				ctx.save();
+				ctx.beginPath();
+				ctx.arc(100, 100, 50, 0, Math.PI * 2, true);
+				ctx.closePath();
+				ctx.clip();
+				ctx.drawImage(avatarImg, 50, 50, 100, 100);
+				ctx.restore();
+
+				ctx.fillStyle = '#dbeafe';
+				ctx.font = 'bold 28px Segoe UI';
+				ctx.fillText(username, 170, 110);
+				ctx.fillStyle = '#6b7280';
+				ctx.font = '18px Segoe UI';
+				ctx.fillText(new Date().toLocaleDateString(), 170, 140);
+				imagesLoaded += 1;
+			};
+		}
 
 		let rowTop = 175;
 		const rowHeight = 60;
@@ -704,6 +746,19 @@
 			ctx.textBaseline = 'alphabetic';
 			rowTop += rowHeight + 10;
 		});
+
+		const checkImagesLoaded = setInterval(() => {
+			if (imagesLoaded >= 2) {
+				clearInterval(checkImagesLoaded);
+				const dataUrl = canvas.toDataURL('image/png');
+				const link = document.createElement('a');
+				link.href = dataUrl;
+				link.download = 'anilist_stats.png';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			}
+		}, 100);
 	}
 </script>
 
@@ -869,8 +924,10 @@
 		<div
 			class="fixed w-full h-screen backdrop-blur-sm top-0 left-0 flex items-center justify-center z-50"
 			role="dialog"
-			tabindex="0"
-			on:click={() => (settingsOpen = false)}
+			tabindex="-1"
+			on:click={(e) => {
+				if (e.target === e.currentTarget) settingsOpen = false;
+			}}
 			on:keydown={(e) => {
 				if (e.key === 'Escape') settingsOpen = false;
 			}}
@@ -879,7 +936,6 @@
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				class="max-w-[1400px] w-full m-4 bg-slate-850 border border-slate-775 rounded-lg p-6 relative"
-				on:click|capture={(e) => e.stopPropagation()}
 			>
 				<h2 class="text-2xl font-semibold mb-4 text-blue-100">Settings</h2>
 				<div class="space-y-4">
@@ -914,6 +970,17 @@
 						/>
 						<label for="assumeRepeatsAsTotalChapters" class="text-slate-400 mr-2"
 							>Assume repeats as the series total chapters in calculations</label
+						>
+					</div>
+					<div class="flex items-center">
+						<input
+							type="checkbox"
+							id="drawBannerInStatsImage"
+							bind:checked={userSettings.drawBannerInStatsImage}
+							class="mr-2"
+						/>
+						<label for="drawBannerInStatsImage" class="text-slate-400 mr-2"
+							>Include banner in stats image</label
 						>
 					</div>
 					<div class="flex items-center">
