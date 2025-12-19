@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { MangabakaSeries } from '$lib/types/series';
+	import type { List } from '$lib/types/gdpr/list';
 	import { colors } from '$lib/constants';
 	import { getColor } from '$lib/utils';
 	import { SvelteDate, SvelteMap } from 'svelte/reactivity';
@@ -18,14 +19,13 @@
 		y: number;
 		visible: boolean;
 		frozen: boolean;
-		content: { manga: MangabakaSeries[]; anime: string[] } | null;
+		content: { manga: MangaEntry[]; anime: string[] } | null;
 	};
 
+	type MangaEntry = List & { totalProgress: number; data?: MangabakaSeries };
+
 	export let entries: ActivityEntry[] = [];
-	export let listData: Array<{
-		series_id: number;
-		data?: { title?: string; romanizedTitle?: string; nativeTitle?: string };
-	}> = [];
+	export let listData: MangaEntry[] = [];
 
 	const dayMs = 1000 * 60 * 60 * 24;
 
@@ -50,8 +50,10 @@
 	};
 
 	let entryTotals = new SvelteMap<string, number>();
-	let entryDetails = new SvelteMap<string, { manga: MangabakaSeries[]; anime: string[] }>();
+	let entryDetails = new SvelteMap<string, { manga: MangaEntry[]; anime: string[] }>();
 	let normalizedEntries: ActivityEntry[] = [];
+
+	$: listMap = new Map(listData.map((l) => [String(l.series_id), l]));
 
 	$: {
 		entryTotals = new SvelteMap();
@@ -62,23 +64,19 @@
 			if (!Number.isFinite(rawDate)) continue;
 			const total = entry.total ?? groupSum(entry.anime) + groupSum(entry.manga);
 			const key = toKey(rawDate);
-			entryTotals.set(key, total > 0 ? total : 0);
+			entryTotals.set(key, Math.max(0, total));
 
 			const animeTitles = Object.keys(entry.anime || {}).map((id) => {
-				const list = listData.find((l) => String(l.series_id) === id);
+				const list = listMap.get(id);
 				return list?.data?.title || list?.data?.romanizedTitle || list?.data?.nativeTitle || id;
 			});
-			const mangaSeries = Object.keys(entry.manga || {}).map((id) => {
-				const list = listData.find((l) => String(l.series_id) === id);
-				return {
-					sourceAnilistId: id,
-					title:
-						list?.data?.title ||
-						list?.data?.romanizedTitle ||
-						list?.data?.nativeTitle ||
-						`Series ${id}`
-				} as MangabakaSeries;
-			});
+			const mangaSeries: MangaEntry[] = [];
+			for (const mangaId of Object.keys(entry.manga || {})) {
+				const list = listMap.get(mangaId);
+				if (list) {
+					mangaSeries.push(list);
+				}
+			}
 
 			if (mangaSeries.length > 0 || animeTitles.length > 0) {
 				entryDetails.set(key, { manga: mangaSeries, anime: animeTitles });
@@ -134,13 +132,12 @@
 	) => {
 		if (tooltip.frozen) return;
 
-		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
 		element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
 		tooltip = {
-			text: `${date} · ${day.total} activity`,
+			text: `${key} · ${day.total} activity`,
 			element: element,
 			x: event.pageX,
 			y: event.pageY,
@@ -178,7 +175,6 @@
 	};
 
 	const freezeTooltip = (day: { timestamp: number; total: number }, element: HTMLDivElement) => {
-		const date = formatDate(day.timestamp);
 		const key = toKey(day.timestamp);
 		const details = entryDetails.get(key) || { manga: [], anime: [] };
 
@@ -186,7 +182,7 @@
 		element.classList.add('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 
 		tooltip = {
-			text: `${date} · ${day.total} activity`,
+			text: `${key} · ${day.total} activity`,
 			element: element,
 			x: tooltip.x,
 			y: tooltip.y,
@@ -205,17 +201,6 @@
 	const unfreezeTooltip = () => {
 		tooltip.element?.classList.remove('outline', 'outline-2', 'outline-blue-500', 'scale-150');
 		tooltip = { ...tooltip, frozen: false };
-	};
-
-	const formatDate = (timestamp: number) => {
-		const date = new Date(timestamp);
-		return (
-			date.getFullYear() +
-			'-' +
-			String(date.getMonth() + 1).padStart(2, '0') +
-			'-' +
-			String(date.getDate()).padStart(2, '0')
-		);
 	};
 </script>
 
@@ -260,7 +245,7 @@
 								on:mousemove={(event) => moveMouse(event)}
 								on:mouseleave={hideTooltip}
 								on:click={(event) => freezeTooltip(day, event.currentTarget as HTMLDivElement)}
-								aria-label={`${formatDate(day.timestamp)} ${day.total} activity`}
+								aria-label={`${toKey(day.timestamp)} ${day.total} activity`}
 							></div>
 						{/each}
 					</div>
@@ -288,13 +273,16 @@
 						<div class="mb-2">
 							<p class="text-xs font-semibold text-blue-300 mb-1">Manga</p>
 							<ul class="text-xs text-slate-300 space-y-1">
-								{#each tooltip.content.manga as manga (manga.sourceAnilistId)}
+								{#each tooltip.content.manga as manga (manga.id)}
 									<a
 										class="hover:text-blue-400"
-										href="https://anilist.co/manga/{manga.sourceAnilistId}"
+										href={manga.data?.id
+											? `https://mangabaka.org/${manga.data.id}`
+											: `https://anilist.co/manga/${manga.series_id}`}
 										target="_blank"
 										rel="noopener noreferrer"
-										referrerpolicy="origin"><li class="mt-1">• {manga.title}</li></a
+										referrerpolicy="origin"
+										><li class="mt-1">• {manga.data?.title ?? `Series ${manga.series_id}`}</li></a
 									>
 								{/each}
 							</ul>

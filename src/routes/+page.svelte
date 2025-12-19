@@ -821,7 +821,7 @@
 	{/if}
 
 	{#if dayEntries.length > 0}
-		<ActivityGraph entries={dayEntries} listData={mostReadSeries} />
+		<ActivityGraph entries={dayEntries} listData={mangaEntries} />
 	{/if}
 
 	{#if activitiesByHour.some((hourData) => hourData.count > 0)}
