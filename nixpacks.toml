@@ -2,8 +2,8 @@
 node_version = "22.12"
 
 [phases.build]
-cmd = "npm ci && npm run build"
+commands = ["npm ci", "npm run build"]
 cache = ["/app/node_modules"]
 
 [phases.start]
-cmd = "npm run start"
+commands = ["npm run start"]
