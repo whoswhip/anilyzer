@@ -696,10 +696,30 @@
 				ctx.restore();
 
 				imagesLoaded += 1;
+				const avatarImg = new Image();
+				avatarImg.crossOrigin = 'anonymous';
+				avatarImg.src = avatarUrl;
+				avatarImg.onload = () => {
+					ctx.save();
+					ctx.beginPath();
+					ctx.arc(100, 100, 50, 0, Math.PI * 2, true);
+					ctx.closePath();
+					ctx.clip();
+					ctx.drawImage(avatarImg, 50, 50, 100, 100);
+					ctx.restore();
+
+					ctx.fillStyle = '#dbeafe';
+					ctx.font = 'bold 28px Segoe UI';
+					ctx.fillText(username, 170, 110);
+					ctx.fillStyle = '#6b7280';
+					ctx.font = '18px Segoe UI';
+					ctx.fillText(new Date().toLocaleDateString(), 170, 140);
+					imagesLoaded += 1;
+				};
 			};
 		}
 
-		if (avatarUrl !== '') {
+		if (avatarUrl !== '' && !userSettings.drawBannerInStatsImage) {
 			const avatarImg = new Image();
 			avatarImg.crossOrigin = 'anonymous';
 			avatarImg.src = avatarUrl;
@@ -753,7 +773,7 @@
 				const dataUrl = canvas.toDataURL('image/png');
 				const link = document.createElement('a');
 				link.href = dataUrl;
-				link.download = 'anilist_stats.png';
+				link.download = 'anilyzer_stats.png';
 				document.body.appendChild(link);
 				link.click();
 				document.body.removeChild(link);
