@@ -1,12 +1,7 @@
-/*
-    THIS IS EXPERIMENTAl
-    start: npx ts-node ./scripts/start.ts
-*/
-
 import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import https from 'https';
-import { createIndexes } from './create_indexes.ts';
+import { createIndexes } from './create_indexes.js';
 import { x as extract } from 'tar';
 import 'dotenv/config';
 

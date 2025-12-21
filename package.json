@@ -11,7 +11,9 @@
 	},
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "vite build && tsc -p tsconfig.scripts.json",
+		"build:scripts": "tsc -p tsconfig.scripts.json",
+		"start": "node dist/scripts/start.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
