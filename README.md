@@ -49,7 +49,7 @@ npx ts-node ./scripts/create_indexes.ts
 2. Run the following SQL:
 
 ```sql
-CREATE INDEX IF NOT EXISTS source_anilist_id_idx ON series (source_anilist_id);
+CREATE INDEX IF NOT EXISTS active_source_anilist_id_idx ON series(source_anilist_id, state);
 ```
 
 ### Configuration:
