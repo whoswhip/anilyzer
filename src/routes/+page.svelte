@@ -11,6 +11,7 @@
 	import { getColor, darkenColor, pluralize } from '$lib/utils';
 	import { slide } from 'svelte/transition';
 	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload, ImageDown } from '@lucide/svelte';
+	import { max } from 'drizzle-orm';
 
 	interface StatItem {
 		title: string;
@@ -660,6 +661,7 @@
 			? `https://s4.anilist.co/file/anilistcdn/user/banner/${fullData?.user?.banner_url}`
 			: '';
 		const username = fullData?.user?.display_name || 'Unknown User';
+		const maxImages = avatarUrl !== '' && bannerUrl !== '' && userSettings.drawBannerInStatsImage ? 2 : 1;
 
 		if (bannerUrl !== '' && userSettings.drawBannerInStatsImage) {
 			const bannerImg = new Image();
@@ -768,7 +770,7 @@
 		});
 
 		const checkImagesLoaded = setInterval(() => {
-			if (imagesLoaded >= 2) {
+			if (imagesLoaded >= maxImages) {
 				clearInterval(checkImagesLoaded);
 				const dataUrl = canvas.toDataURL('image/png');
 				const link = document.createElement('a');
