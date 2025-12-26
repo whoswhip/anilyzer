@@ -1,0 +1,9 @@
+node_modules
+build
+dist
+data
+.env
+.git
+*.sqlite
+*.tar.gz
+series.timestamp.local

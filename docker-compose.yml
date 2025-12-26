@@ -1,0 +1,15 @@
+services:
+  app:
+    container_name: anilyzer-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      DATABASE_URL: /app/data/series.sqlite
+      LOCAL_TS_FILE: /app/data/series.timestamp.local
+      PORT: 3000
+    restart: unless-stopped

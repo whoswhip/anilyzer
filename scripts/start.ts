@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import https from 'https';
+import path from 'path';
 import { createIndexes } from './create_indexes.js';
 import { x as extract } from 'tar';
 import 'dotenv/config';
@@ -9,8 +10,8 @@ const DB_ARCHIVE = 'series.sqlite.tar.gz';
 const TS_URL = 'https://api.mangabaka.dev/v1/database/series.timestamp.txt';
 const DB_URL = `https://api.mangabaka.dev/v1/database/${DB_ARCHIVE}`;
 
-const LOCAL_TS_FILE = 'series.timestamp.local';
-const DB_FILE = 'series.sqlite';
+const LOCAL_TS_FILE = process.env.LOCAL_TS_FILE || 'series.timestamp.local';
+const DB_FILE = process.env.DATABASE_URL || 'series.sqlite';
 let server: ChildProcess | null = null;
 
 function fetch(url: string): Promise<string> {
@@ -47,9 +48,16 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 
 async function updateDatabase(logMessage: string, remoteTS: string): Promise<boolean> {
 	console.log(logMessage);
-	await downloadFile(DB_URL, DB_ARCHIVE);
-	await extract({ file: DB_ARCHIVE, cwd: '.' });
-	fs.unlinkSync(DB_ARCHIVE);
+	const dbDir = path.dirname(DB_FILE);
+	const archivePath = path.join(dbDir, DB_ARCHIVE);
+
+	if (!fs.existsSync(dbDir)) {
+		fs.mkdirSync(dbDir, { recursive: true });
+	}
+
+	await downloadFile(DB_URL, archivePath);
+	await extract({ file: archivePath, cwd: dbDir });
+	fs.unlinkSync(archivePath);
 	fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
 	createIndexes();
 	console.log('Database updated.');

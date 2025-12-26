@@ -1,9 +1,0 @@
-[phases.setup]
-node_version = "22.12"
-
-[phases.build]
-cmds = ["npm ci", "npm run build", "npm run build:scripts"]
-cacheDirectories = ["/app/node_modules"]
-
-[start]
-cmd = "npm run start"
