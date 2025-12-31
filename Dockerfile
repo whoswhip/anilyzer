@@ -14,6 +14,8 @@ COPY --from=builder /app/build build/
 COPY --from=builder /app/dist dist/
 COPY --from=builder /app/node_modules node_modules/
 COPY package.json .
+
+RUN apk add --no-cache wget
 EXPOSE 3000
 ENV NODE_ENV=production
 CMD [ "node", "dist/scripts/start.js" ]
