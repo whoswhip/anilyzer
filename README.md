@@ -40,7 +40,7 @@ npm install
 **Option A: Run the script**
 
 ```bash
-npx ts-node ./scripts/create_indexes.ts
+npx ts-node ./scripts/setupDatabase.ts
 ```
 
 **Option B: Do it manually**
@@ -49,7 +49,7 @@ npx ts-node ./scripts/create_indexes.ts
 2. Run the following SQL:
 
 ```sql
-CREATE INDEX IF NOT EXISTS active_source_anilist_id_idx ON series(source_anilist_id, state);
+CREATE INDEX IF NOT EXISTS source_anilist_id_idx ON series(source_anilist_id);
 ```
 
 ### Configuration:
@@ -79,6 +79,14 @@ This should point to your extracted Mangabaka `.sqlite` file
 #### For Production/Public Hosting
 
 If you want to make Anilyzer **publically accessible**, follow these steps:
+
+**Docker:**
+
+```bash
+docker compose up -d --build
+```
+
+**Manual:**
 
 1. Build for production:
    ```bash

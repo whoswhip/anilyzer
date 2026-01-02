@@ -661,7 +661,8 @@
 			? `https://s4.anilist.co/file/anilistcdn/user/banner/${fullData?.user?.banner_url}`
 			: '';
 		const username = fullData?.user?.display_name || 'Unknown User';
-		const maxImages = avatarUrl !== '' && bannerUrl !== '' && userSettings.drawBannerInStatsImage ? 2 : 1;
+		const maxImages =
+			avatarUrl !== '' && bannerUrl !== '' && userSettings.drawBannerInStatsImage ? 2 : 1;
 
 		if (bannerUrl !== '' && userSettings.drawBannerInStatsImage) {
 			const bannerImg = new Image();

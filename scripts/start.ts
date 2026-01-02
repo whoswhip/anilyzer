@@ -2,7 +2,7 @@ import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import path from 'path';
-import { createIndexes } from './create_indexes.js';
+import { setupDatabase } from './setupDatabase.js';
 import { x as extract } from 'tar';
 import 'dotenv/config';
 
@@ -59,7 +59,7 @@ async function updateDatabase(logMessage: string, remoteTS: string): Promise<boo
 	await extract({ file: archivePath, cwd: dbDir });
 	fs.unlinkSync(archivePath);
 	fs.writeFileSync(LOCAL_TS_FILE, remoteTS);
-	createIndexes();
+	setupDatabase();
 	console.log('Database updated.');
 	return true;
 }
