@@ -35,7 +35,7 @@ function keepActiveOnly() {
 	try {
 		const db = new Database(dbPath);
 
-		const deleteStmt = db.prepare(`DELETE FROM series WHERE state != 'ACTIVE';`);
+		const deleteStmt = db.prepare(`DELETE FROM series WHERE state != 'active';`);
 		const result = deleteStmt.run();
 
 		console.log(`Deleted ${result.changes} inactive series entries.`);
