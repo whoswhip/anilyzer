@@ -11,7 +11,6 @@
 	import { getColor, darkenColor, pluralize } from '$lib/utils';
 	import { slide } from 'svelte/transition';
 	import { ArrowUp, ArrowDown, Settings, GithubIcon, Upload, ImageDown } from '@lucide/svelte';
-	import { max } from 'drizzle-orm';
 
 	interface StatItem {
 		title: string;
